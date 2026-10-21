@@ -1,4 +1,3 @@
-
 using CropCare.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -7,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // MVC controllers and Razor views
 builder.Services.AddControllersWithViews();
+
+// Per-request zone summaries using existing authenticated API endpoints.
+builder.Services.AddScoped<ZoneOverviewService>();
 
 // Temporary server-side token storage
 builder.Services.AddMemoryCache();

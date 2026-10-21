@@ -1,0 +1,72 @@
+﻿@model CropCare.Web.Models.ZoneOverview
+@{
+    ViewData["Title"] = $"{Model.Zone.ZoneName} sensors";
+}
+<div class="py-4">
+    <a asp-controller="Zones" asp-action="Details" asp-route-id="@Model.Zone.ZoneId"
+       class="text-success text-decoration-none">&larr; Back to @Model.Zone.ZoneName</a>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+        <div>
+            <h1 class="fw-bold text-success mb-1">@Model.Zone.ZoneName — Sensors</h1>
+            <p class="text-muted mb-0">Manage the sensors assigned to this farm zone.</p>
+        </div>
+        <button class="btn btn-outline-secondary" disabled title="QR pairing redesign is on hold">+ Add Sensor (coming soon)</button>
+    </div>
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-warning">@Model.Error</div>
+    }
+    <p class="small text-muted">QR pairing/unpairing redesign remains on hold. Current removal is a sensor-registration deletion; it does not restore a consumed QR claim.</p>
+    @if (Model.Sensors.Count == 0)
+    {
+        <div class="alert alert-secondary">No sensors are registered to this zone yet.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var item in Model.Sensors.OrderBy(x => x.Sensor.SensorName, StringComparer.OrdinalIgnoreCase))
+            {
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h2 class="h5 fw-bold text-success">@item.Sensor.SensorName</h2>
+                            <p class="small text-muted mb-2">Device: @item.Sensor.DeviceId</p>
+                            <p class="mb-2">
+                                <span class="badge @(item.Monitoring?.Status == "recent" ? "bg-success" : "bg-secondary")">@item.Freshness</span>
+                            </p>
+                            <p class="small text-muted mb-1">Last reading: @CropCare.Web.Models.SensorDates.Format(item.Monitoring?.LastReadingAtMs ?? 0)</p>
+                            @if (item.Error != null)
+                            {
+                                <p class="small text-danger">@item.Error</p>
+                            }
+                            <a asp-controller="Sensors" asp-action="Details" asp-route-id="@item.Sensor.SensorId"
+                               class="btn btn-outline-success mt-auto">View Sensor Details &rarr;</a>
+                            <form asp-controller="Sensors" asp-action="Delete" asp-route-id="@item.Sensor.SensorId"
+                                  method="post" asp-antiforgery="true" class="mt-2"
+                                  onsubmit="return confirm('Remove this sensor registration? Re-pairing its old QR remains blocked.');">
+                                <button class="btn btn-outline-danger w-100" type="submit">Remove Sensor</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="card border-danger rounded-4 mt-4">
+            <div class="card-body p-4">
+                <h2 class="h6 text-danger fw-bold">Remove all sensors from this zone</h2>
+                <p class="small text-muted">This permanently removes registrations one by one. Historical records remain in Firestore but may no longer be accessible through these registrations. Existing QR claims will stay consumed.</p>
+                <form asp-controller="Sensors" asp-action="DeleteAll" method="post" asp-antiforgery="true"
+                      onsubmit="return confirm('Remove all sensor registrations from this zone? This cannot be undone.');">
+                    <input type="hidden" name="zoneId" value="@Model.Zone.ZoneId" />
+                    <label for="confirmation" class="form-label">Type DELETE to confirm</label>
+                    <input id="confirmation" type="text" name="confirmation" class="form-control mb-2" required autocomplete="off" />
+                    <button type="submit" class="btn btn-outline-danger">Remove All Sensors</button>
+                </form>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,32 @@
+﻿@model CropCare.Web.Models.VerifyRecoveryCodeViewModel
+@{
+    ViewData["Title"] = "Verify Recovery Code";
+}
+<div class="row justify-content-center py-4 py-lg-5">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <h1 class="h3 fw-bold text-success">Verify Your Code</h1>
+                <p class="text-muted">Enter the six-digit code emailed to you. It expires after five minutes.</p>
+                @if (TempData.Peek("RecoveryMessage") is string message)
+                {
+                    <div class="alert alert-info" role="status">@message</div>
+                }
+                <form asp-controller="Recovery" asp-action="Verify" method="post" asp-antiforgery="true">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+                    <div class="mb-4">
+                        <label asp-for="Code" class="form-label fw-semibold">Recovery code</label>
+                        <input asp-for="Code" class="form-control form-control-lg" inputmode="numeric"
+                               autocomplete="one-time-code" maxlength="6" placeholder="123456" />
+                        <span asp-validation-for="Code" class="text-danger small"></span>
+                    </div>
+                    <button class="btn btn-success w-100" type="submit">Verify Code</button>
+                </form>
+                <a asp-action="Request" class="d-block text-center mt-3">Request another code</a>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

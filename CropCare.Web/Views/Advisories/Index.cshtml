@@ -1,0 +1,86 @@
+﻿@model CropCare.Web.Models.AdvisoriesPageModel
+@{
+    ViewData["Title"] = "Fertilizer Advisory Preview";
+    var advisory = Model.Advisory;
+}
+<div class="py-4">
+    <h1 class="h2 text-success fw-bold">Fertilizer Advisory Preview</h1>
+    <p class="text-muted">Corn growth-stage context and experimental NPK comparisons from previously stored measurements.</p>
+    <div class="alert alert-warning" role="note">
+        <strong>For school demonstration only.</strong> This is not a validated fertilizer application plan.
+        Do not use this page to determine fertilizer type, dosage, or timing.
+    </div>
+
+    @if (Model.Error != null)
+    {
+        <div class="alert alert-danger" role="alert">@Model.Error</div>
+    }
+    @if (Model.Zones.Count == 0)
+    {
+        <div class="alert alert-info">You have no farm zones yet. <a asp-controller="Zones" asp-action="Create">Create one</a> to begin.</div>
+    }
+    else
+    {
+        <form asp-controller="Advisories" asp-action="Index" method="get" class="row g-2 mb-4">
+            <div class="col-12 col-md-8">
+                <label for="zoneId" class="form-label fw-semibold">Farm zone</label>
+                <select id="zoneId" name="zoneId" class="form-select">
+                    @foreach (var zone in Model.Zones)
+                    {
+                        <option value="@zone.ZoneId" selected="@(Model.SelectedZoneId == zone.ZoneId)">@zone.ZoneName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-4 align-self-end">
+                <button class="btn btn-success w-100" type="submit">View advisory</button>
+            </div>
+        </form>
+    }
+
+    @if (advisory != null)
+    {
+        <div class="card shadow-sm border-0 rounded-4 mb-3">
+            <div class="card-body p-4">
+                <h2 class="h4 text-success fw-bold">@advisory.ZoneName</h2>
+                <p class="mb-1"><strong>Stage:</strong> @advisory.StageName</p>
+                <p class="mb-1"><strong>Days after planting:</strong> @(advisory.DaysAfterPlanting?.ToString() ?? "Not set")</p>
+                <p class="mb-1"><strong>Sample sensor:</strong> @(advisory.SensorName ?? "No readings found")</p>
+                <p class="mb-1"><strong>Reading timestamp:</strong> @CropCare.Web.Models.SensorDates.Format(advisory.RecordedAtMs)</p>
+                <p class="mb-3"><strong>Freshness:</strong> @advisory.ReadingStatus</p>
+                <div class="alert alert-secondary mb-0">@advisory.Summary</div>
+            </div>
+        </div>
+        @if (advisory.Reading != null)
+        {
+            <div class="card shadow-sm border-0 rounded-4 mb-3">
+                <div class="card-body p-4">
+                    <h2 class="h5 text-success">Recorded NPK values</h2>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead><tr><th>Nutrient</th><th>Saved reading (mg/kg)</th><th>Android prototype reference (mg/kg)</th></tr></thead>
+                            <tbody>
+                                <tr><td>Nitrogen</td><td>@(advisory.Reading.Nitrogen?.ToString("0.##") ?? "—")</td><td>@(advisory.PrototypeTargets?.Nitrogen?.ToString("0.##") ?? "—")</td></tr>
+                                <tr><td>Phosphorus</td><td>@(advisory.Reading.Phosphorus?.ToString("0.##") ?? "—")</td><td>@(advisory.PrototypeTargets?.Phosphorus?.ToString("0.##") ?? "—")</td></tr>
+                                <tr><td>Potassium</td><td>@(advisory.Reading.Potassium?.ToString("0.##") ?? "—")</td><td>@(advisory.PrototypeTargets?.Potassium?.ToString("0.##") ?? "—")</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small text-muted mb-0">The Android stage-reference values are development assumptions, not validated soil-test sufficiency thresholds.</p>
+                </div>
+            </div>
+        }
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <h2 class="h5 text-success">Next steps</h2>
+                <ul>
+                    @foreach (var item in advisory.ActionItems)
+                    {
+                        <li class="mb-2">@item</li>
+                    }
+                </ul>
+                <p class="small text-muted">@advisory.Disclaimer</p>
+                <a asp-controller="Monitoring" asp-action="Index" class="btn btn-outline-success">Review sensor monitoring</a>
+            </div>
+        </div>
+    }
+</div>

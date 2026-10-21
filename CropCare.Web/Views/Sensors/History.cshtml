@@ -1,0 +1,65 @@
+﻿@model CropCare.Web.Models.SensorHistoryViewModel
+@{
+    ViewData["Title"] = "Sensor History";
+    string Value(double? n, string unit = "") => n.HasValue ? n.Value.ToString("0.##") + unit : "—";
+}
+<div class="py-4">
+    <a asp-controller="Sensors" asp-action="Details" asp-route-id="@Model.SensorId"
+       class="text-success text-decoration-none">&larr; Back to Sensor Details</a>
+    <h1 class="fw-bold text-success mt-3">@Model.History.SensorName — History</h1>
+    <p class="text-muted">Each entry shows all seven measurements from ONE recorded sensor reading, newest first, like the Android app.</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-warning">@Model.Error</div>
+    }
+    @if (Model.History.Readings.Count == 0)
+    {
+        <div class="alert alert-secondary">No saved soil history available on this page.</div>
+    }
+    else
+    {
+        <p class="small text-muted">@Model.History.Readings.Count readings on this page • scroll down for older timestamps</p>
+        <div class="d-grid gap-3" style="max-height: 75vh; overflow-y: auto; overscroll-behavior: contain;" tabindex="0" aria-label="Scrollable sensor reading history">
+            @foreach (var entry in Model.History.Readings)
+            {
+                <article class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h2 class="h6 fw-bold text-success mb-0">@entry.RecordedText</h2>
+                            <span class="badge bg-secondary">Saved reading</span>
+                        </div>
+                        <div class="row row-cols-2 row-cols-md-4 g-2">
+                            @foreach (var m in new (string Label, string Reading)[]
+                                                {
+                                        ("N", Value(entry.Nitrogen, " mg/kg")),
+                                        ("P", Value(entry.Phosphorus, " mg/kg")),
+                                        ("K", Value(entry.Potassium, " mg/kg")),
+                                        ("Moisture", Value(entry.Moisture, "%")),
+                                        ("pH", Value(entry.Ph)),
+                                        ("Temperature", Value(entry.Temperature, " °C")),
+                                        ("EC", Value(entry.Ec, " (stored units)"))
+                                                })
+                            {
+                                <div class="col">
+                                    <div class="bg-light rounded-3 p-2 h-100">
+                                        <span class="small text-muted d-block">@m.Label</span>
+                                        <strong>@m.Reading</strong>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+    <div class="d-flex justify-content-between gap-2 flex-wrap mt-3">
+        <a asp-action="History" asp-route-id="@Model.SensorId" class="btn btn-outline-success">Newest Page</a>
+        @if (!string.IsNullOrWhiteSpace(Model.History.NextCursor))
+        {
+            <a asp-action="History" asp-route-id="@Model.SensorId" asp-route-cursor="@Model.History.NextCursor"
+               class="btn btn-success">Older Readings &rarr;</a>
+        }
+    </div>
+    <p class="small text-muted mt-2">The older-readings button loads the next history page from the API. Historical data is not a live sensor connection.</p>
+</div>

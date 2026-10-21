@@ -1,0 +1,121 @@
+﻿@model CropCare.Web.Models.MonitoringOverviewViewModel
+@{
+    ViewData["Title"] = "Soil Monitoring";
+    string Value(double? number, string unit = "") =>
+        number.HasValue ? number.Value.ToString("0.##") + unit : "—";
+}
+<div class="py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h1 class="fw-bold text-success mb-1">Soil Monitoring</h1>
+            <p class="text-muted mb-0">Latest saved readings from your registered CropCare sensors</p>
+        </div>
+        <a asp-action="Index" asp-route-zoneId="@Model.ZoneId" class="btn btn-outline-success">Refresh saved readings</a>
+    </div>
+
+    <div class="alert alert-info" role="note">
+        These readings come from your existing Firestore records through the CropCare API.
+        <strong>A recent timestamp is not proof that the ESP32 is connected.</strong>
+        Older measurements remain visible for review.
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-warning" role="alert">@Model.Error</div>
+    }
+    @if (Model.IsLimited)
+    {
+        <div class="alert alert-secondary">
+            Showing the first 30 of @Model.TotalSensorCount registered sensors to keep the page fast.
+            <a asp-controller="Sensors" asp-action="Index">See all registrations</a>.
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">Registered (filtered)</div><div class="fs-2 fw-bold text-success">@Model.TotalSensorCount</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">With saved data</div><div class="fs-2 fw-bold text-success">@Model.WithReadings</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">Recent timestamps</div><div class="fs-2 fw-bold text-success">@Model.RecentReadings</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small">Stale timestamps</div><div class="fs-2 fw-bold text-success">@Model.StaleReadings</div></div></div></div>
+    </div>
+
+    <form method="get" asp-action="Index" class="row g-2 align-items-end mb-4">
+        <div class="col-12 col-sm-8 col-md-5">
+            <label for="zoneFilter" class="form-label fw-semibold">Filter by farm zone</label>
+            <select class="form-select" id="zoneFilter" name="zoneId">
+                <option value="">All zones</option>
+                @foreach (var zone in Model.Zones)
+                {
+                    if (zone.ZoneId == Model.ZoneId)
+                    {
+                        <option value="@zone.ZoneId" selected>@zone.ZoneName</option>
+                    }
+                    else
+                    {
+                        <option value="@zone.ZoneId">@zone.ZoneName</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-12 col-sm-auto"><button type="submit" class="btn btn-success w-100">Apply filter</button></div>
+    </form>
+
+    @if (Model.Sensors.Count == 0)
+    {
+        <div class="alert alert-secondary">
+            No registered sensors are available for this view. Check
+            <a asp-controller="Sensors" asp-action="Index">My Sensors</a>
+            or select a different zone. QR pairing remains on hold.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var item in Model.Sensors)
+            {
+                var reading = item.Reading;
+                var statusColor = item.Monitoring?.Status == "recent" ? "bg-success" :
+                item.Monitoring?.Status == "stale" ? "bg-warning text-dark" : "bg-secondary";
+                <div class="col-12 col-lg-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                                <div>
+                                    <h2 class="h5 text-success fw-bold mb-1">@item.Sensor.SensorName</h2>
+                                    <div class="text-muted small">Zone: @item.ZoneName</div>
+                                </div>
+                                <span class="badge @statusColor">@item.ReadingStatus</span>
+                            </div>
+                            <div class="small text-muted mb-3">
+                                Latest stored: @CropCare.Web.Models.SensorDates.Format(item.Monitoring?.LastReadingAtMs ?? 0)
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(item.Error))
+                            {
+                                <div class="alert alert-warning py-2" role="alert">@item.Error</div>
+                            }
+                            @if (reading != null)
+                            {
+                                <div class="row g-2 mb-3">
+                                    <div class="col-4"><div class="border rounded-3 p-2"><div class="small text-muted">N (mg/kg)</div><strong>@Value(reading.Nitrogen)</strong></div></div>
+                                    <div class="col-4"><div class="border rounded-3 p-2"><div class="small text-muted">P (mg/kg)</div><strong>@Value(reading.Phosphorus)</strong></div></div>
+                                    <div class="col-4"><div class="border rounded-3 p-2"><div class="small text-muted">K (mg/kg)</div><strong>@Value(reading.Potassium)</strong></div></div>
+                                    <div class="col-6"><div class="border rounded-3 p-2"><div class="small text-muted">pH</div><strong>@Value(reading.Ph)</strong></div></div>
+                                    <div class="col-6"><div class="border rounded-3 p-2"><div class="small text-muted">Moisture</div><strong>@Value(reading.Moisture, "%")</strong></div></div>
+                                    <div class="col-6"><div class="border rounded-3 p-2"><div class="small text-muted">Temperature</div><strong>@Value(reading.Temperature, " °C")</strong></div></div>
+                                    <div class="col-6"><div class="border rounded-3 p-2"><div class="small text-muted">EC (stored unit)</div><strong>@Value(reading.Ec)</strong></div></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No saved reading was returned for this sensor.</p>
+                            }
+                            <div class="d-flex flex-wrap gap-2">
+                                <a asp-action="History" asp-route-id="@item.Sensor.SensorId" class="btn btn-success">View history &amp; graphs</a>
+                                <a asp-controller="Sensors" asp-action="Details" asp-route-id="@item.Sensor.SensorId" class="btn btn-outline-success">Sensor details</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

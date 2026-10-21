@@ -1,0 +1,63 @@
+﻿@model CropCare.Web.Models.NotificationsPageModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+<div class="py-4">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h2 fw-bold text-success mb-1">Notifications</h1>
+            <p class="text-muted mb-0">Saved alerts for your CropCare account (latest 100).</p>
+        </div>
+        @if (Model.Notifications.Count > 0)
+        {
+            <form asp-controller="Notifications" asp-action="ClearAll" method="post" asp-antiforgery="true"
+                  onsubmit="return confirm('Delete all stored notifications? This also removes them from the Android app.');">
+                <button type="submit" class="btn btn-outline-danger">Clear all</button>
+            </form>
+        }
+    </div>
+    @if (TempData["Message"] is string msg)
+    {
+        <div class="alert alert-success" role="status">@msg</div>
+    }
+    @if (Model.Error != null)
+    {
+        <div class="alert alert-warning" role="alert">@Model.Error</div>
+    }
+    @if (Model.Notifications.Count == 0 && Model.Error == null)
+    {
+        <div class="alert alert-info">No saved notifications yet. Historical readings alone do not automatically create new notifications.</div>
+    }
+    <div class="row g-3">
+        @foreach (var item in Model.Notifications)
+        {
+            <div class="col-12">
+                <article class="card shadow-sm rounded-4 @(item.IsRead ? "border-light" : "border-success")">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex justify-content-between gap-2 flex-wrap align-items-start">
+                            <div>
+                                <h2 class="h5 mb-1">@item.Title</h2>
+                                <p class="text-muted small mb-2">@item.TimeText · @item.Type · @(item.IsRead ? "Read" : "Unread")</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (!item.IsRead)
+                                {
+                                    <form asp-controller="Notifications" asp-action="MarkRead" method="post" asp-antiforgery="true">
+                                        <input name="id" type="hidden" value="@item.Id" />
+                                        <button class="btn btn-sm btn-outline-success" type="submit">Mark read</button>
+                                    </form>
+                                }
+                                <form asp-controller="Notifications" asp-action="Remove" method="post" asp-antiforgery="true"
+                                      onsubmit="return confirm('Delete this notification?');">
+                                    <input name="id" type="hidden" value="@item.Id" />
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        <p class="mb-0">@item.Message</p>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+</div>

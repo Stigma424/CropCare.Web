@@ -1,4 +1,4 @@
-﻿
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CropCare.Web.Models;
@@ -13,97 +13,45 @@ namespace CropCare.Web.Controllers;
 [Authorize]
 public sealed class DashboardController : Controller
 {
-    private readonly IHttpClientFactory _httpClients;
-    private readonly FirebaseTokenStore _tokenStore;
+    private readonly IHttpClientFactory _clients;
+    private readonly FirebaseTokenStore _tokens;
+    private readonly ZoneOverviewService _zones;
 
-    public DashboardController(
-        IHttpClientFactory httpClients,
-        FirebaseTokenStore tokenStore)
+    public DashboardController(IHttpClientFactory clients, FirebaseTokenStore tokens, ZoneOverviewService zones)
     {
-        _httpClients = httpClients;
-        _tokenStore = tokenStore;
+        _clients = clients;
+        _tokens = tokens;
+        _zones = zones;
     }
 
-    // GET: /Dashboard
-    public async Task<IActionResult> Index(
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var sessionId = User.FindFirst(
-            "CropCareSession")?.Value;
-
-        var idToken = _tokenStore.GetIdToken(sessionId);
-
-        // Require a valid stored Firebase token
-        if (idToken == null)
-        {
-            await HttpContext.SignOutAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme);
-
-            return RedirectToAction(
-                "Login",
-                "Account");
-        }
-
+        var session = User.FindFirst("CropCareSession")?.Value;
+        var token = _tokens.GetIdToken(session);
+        if (string.IsNullOrWhiteSpace(token)) return await Expired(session);
+        var model = new CropCareDashboardViewModel();
         try
         {
-            var client = _httpClients.CreateClient(
-                "CropCareApi");
-
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                "api/account/me");
-
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue(
-                    "Bearer",
-                    idToken);
-
-            using var response = await client.SendAsync(
-                request,
-                cancellationToken);
-
-            // Expired or rejected Firebase token
-            if (response.StatusCode ==
-                System.Net.HttpStatusCode.Unauthorized)
-            {
-                _tokenStore.RemoveSession(sessionId);
-
-                await HttpContext.SignOutAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme);
-
-                return RedirectToAction(
-                    "Login",
-                    "Account");
-            }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                ViewBag.Status =
-                    "Profile temporarily unavailable.";
-
-                return View((CropCareProfile?)null);
-            }
-
-            var profile = await response.Content
-                .ReadFromJsonAsync<CropCareProfile>(
-                    cancellationToken: cancellationToken);
-
-            return View(profile);
+            var client = _clients.CreateClient("CropCareApi");
+            using var request = new HttpRequestMessage(HttpMethod.Get, "api/account/me");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await client.SendAsync(request, ct);
+            if (response.StatusCode == HttpStatusCode.Unauthorized) return await Expired(session);
+            if (response.IsSuccessStatusCode)
+                model.Profile = await response.Content.ReadFromJsonAsync<CropCareProfile>(cancellationToken: ct);
+            model.Zones = await _zones.GetDashboardZonesAsync(token, ct);
         }
-        catch (HttpRequestException)
-        {
-            ViewBag.Status =
-                "Could not connect to CropCare API.";
+        catch (UnauthorizedAccessException) { return await Expired(session); }
+        catch (HttpRequestException) { model.Error = "Some farm information could not be loaded. Check the API connection."; }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        { model.Error = "The API request timed out. Please refresh."; }
+        return View(model);
+    }
 
-            return View((CropCareProfile?)null);
-        }
-        catch (TaskCanceledException)
-            when (!cancellationToken.IsCancellationRequested)
-        {
-            ViewBag.Status =
-                "CropCare API request timed out.";
-
-            return View((CropCareProfile?)null);
-        }
+    private async Task<IActionResult> Expired(string? session)
+    {
+        _tokens.RemoveSession(session);
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction("Login", "Account");
     }
 }

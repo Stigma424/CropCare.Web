@@ -1,0 +1,68 @@
+﻿@model CropCare.Web.Models.PairSensorViewModel
+@{
+    ViewData["Title"] = "Pair Sensor";
+}
+<div class="py-4">
+    <a asp-controller="Sensors" asp-action="Index" class="text-success text-decoration-none">&larr; Back to My Sensors</a>
+    <h1 class="fw-bold text-success mt-3">Pair a CropCare Sensor</h1>
+    <p class="text-muted">Scan the official CropCare QR code with your camera or upload a QR image from your device.</p>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 text-success fw-bold">1. Read device QR</h2>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button type="button" id="startCamera" class="btn btn-success">Start camera</button>
+                        <button type="button" id="stopCamera" class="btn btn-outline-secondary" disabled>Stop camera</button>
+                    </div>
+                    <div id="qr-reader" class="border rounded-3 overflow-hidden" style="min-height:80px;"></div>
+                    <label for="qrFile" class="form-label fw-semibold mt-3">Or select a QR image</label>
+                    <input type="file" id="qrFile" accept="image/png,image/jpeg,image/webp,image/*" class="form-control" />
+                    <div class="form-text">Your image is decoded in your browser; it is not uploaded to CropCare's server.</div>
+                    <div id="qrStatus" role="status" aria-live="polite" class="alert alert-secondary mt-3 mb-0">No QR scanned yet.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 text-success fw-bold">2. Assign sensor</h2>
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-2" role="alert"></div>
+                    @if (Model.Zones.Count == 0)
+                    {
+                        <p class="alert alert-warning">Create a farm zone before pairing a device.</p>
+                        <a asp-controller="Zones" asp-action="Create" class="btn btn-outline-success">Create Zone</a>
+                    }
+                    <form id="pairForm" asp-action="Pair" method="post" asp-antiforgery="true" autocomplete="off">
+                        <input asp-for="QrPayload" type="hidden" id="QrPayload" />
+                        <span asp-validation-for="QrPayload" class="text-danger small d-block mb-2"></span>
+                        <div class="mb-3">
+                            <label asp-for="SensorName" class="form-label fw-semibold"></label>
+                            <input asp-for="SensorName" class="form-control" placeholder="Example: North Field Sensor" maxlength="80" />
+                            <span asp-validation-for="SensorName" class="text-danger small"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="ZoneId" class="form-label fw-semibold"></label>
+                            <select asp-for="ZoneId" class="form-select">
+                                <option value="">Select one of your zones</option>
+                                @foreach (var zone in Model.Zones)
+                                {
+                                    <option value="@zone.ZoneId">@zone.ZoneName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="ZoneId" class="text-danger small"></span>
+                        </div>
+                        <p class="small text-muted">The API will reject unregistered, disabled, invalid, or already-claimed devices. A scan does not guarantee pairing.</p>
+                        <button id="pairButton" type="submit" class="btn btn-success w-100" disabled="@(Model.Zones.Count == 0)">Pair Sensor</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="~/js/sensor-pairing.js" asp-append-version="true"></script>
+}
