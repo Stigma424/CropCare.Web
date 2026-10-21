@@ -1,0 +1,167 @@
+﻿@model CropCare.Web.Models.CropCareProfile
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="py-4">
+
+    <!-- Dashboard Heading -->
+    <div class="mb-4">
+
+        <h1 class="fw-bold text-success">
+            CropCare Dashboard
+        </h1>
+
+        <p class="text-muted">
+            Welcome back,
+            @(Model?.FirstName ?? User.Identity?.Name ?? "Farmer")!
+        </p>
+
+    </div>
+
+    <!-- API Error Message -->
+    @if (ViewBag.Status is string message)
+    {
+        <div class="alert alert-warning" role="alert">
+            @message
+        </div>
+    }
+
+    <!-- Real Firestore Profile -->
+    @if (Model != null)
+    {
+        <div class="alert alert-success" role="status">
+            You are successfully logged in using Firebase Authentication.
+            Your profile was loaded from the CropCare API.
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+
+            <div class="card-body p-4">
+
+                <h5 class="fw-bold text-success mb-3">
+                    Farmer Information
+                </h5>
+
+                <div class="row g-3">
+
+                    <div class="col-12 col-md-6">
+                        <strong>First Name</strong>
+                        <p class="text-muted mb-0">
+                            @Model.FirstName
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <strong>Last Name</strong>
+                        <p class="text-muted mb-0">
+                            @Model.LastName
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <strong>Username</strong>
+                        <p class="text-muted mb-0">
+                            @Model.Username
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <strong>Email Address</strong>
+                        <p class="text-muted mb-0">
+                            @Model.Email
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+    <!-- Dashboard Modules -->
+    <div class="row g-3">
+
+        <!-- Farm Zones -->
+        <div class="col-12 col-md-6 col-xl-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body p-4">
+
+                    <h5 class="fw-bold text-success">
+                        Farm Zones
+                    </h5>
+
+                    <p class="text-muted">
+                        Manage the different planting zones
+                        on your farm.
+                    </p>
+
+                    <span class="badge bg-secondary">
+                        Coming in Batch 3
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Soil Monitoring -->
+        <div class="col-12 col-md-6 col-xl-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body p-4">
+
+                    <h5 class="fw-bold text-success">
+                        Soil Monitoring
+                    </h5>
+
+                    <p class="text-muted">
+                        Monitor nitrogen, phosphorus, potassium,
+                        pH, EC, temperature, and moisture.
+                    </p>
+
+                    <span class="badge bg-secondary">
+                        Coming in Batch 6
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Recommendations -->
+        <div class="col-12 col-md-6 col-xl-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body p-4">
+
+                    <h5 class="fw-bold text-success">
+                        Fertilizer Recommendations
+                    </h5>
+
+                    <p class="text-muted">
+                        View fertilizer advice based on
+                        monitored soil conditions.
+                    </p>
+
+                    <span class="badge bg-secondary">
+                        Coming in Batch 7
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
