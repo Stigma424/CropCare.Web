@@ -1,0 +1,178 @@
+﻿@model CropCare.Web.Models.ZoneAssessmentDto
+
+@{
+    var soil = Model.SoilHealth;
+    var allocation = Model.SensorAllocation;
+
+    // The crop stage is already shown in the header.
+    // Show the remaining actions without duplicating it.
+    var actions = Model.Recommendations
+        .Where(r => r.Code != "CROP_STAGE")
+        .OrderBy(r =>
+            r.Priority == "high" ? 0 :
+            r.Priority == "medium" ? 1 : 2)
+        .ToList();
+
+    // A possible sensor-data problem, not a diagnosis.
+    int zeroCount = soil.Parameters.Count(p =>
+        p.Value == 0 &&
+        (p.Parameter == "nitrogen" ||
+         p.Parameter == "phosphorus" ||
+         p.Parameter == "potassium" ||
+         p.Parameter == "moisture"));
+}
+
+<div class="modal-header">
+    <div>
+        <h2 class="modal-title h5 fw-bold text-success mb-1">
+            @Model.ZoneName
+        </h2>
+        <div class="small text-muted">
+            @Model.CropStage.Replace('_', ' ')
+            @if (Model.DaysAfterPlanting.HasValue)
+            {
+                <span>
+                    · @Model.DaysAfterPlanting days after planting
+                </span>
+            }
+        </div>
+    </div>
+
+    <button type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close">
+    </button>
+</div>
+
+<div class="modal-body">
+
+    <!-- SOIL CONDITION SUMMARY -->
+
+    <div class="bg-light border rounded-3 p-3 mb-3">
+        <div class="d-flex flex-wrap
+                    align-items-center justify-content-between gap-3">
+
+            <div>
+                <div class="small text-muted">
+                    Soil Condition Score
+                </div>
+
+                @if (soil.Score.HasValue)
+                {
+                    <div class="fs-3 fw-bold text-success">
+                        @soil.Score.Value.ToString("0.#")/100
+                    </div>
+                }
+                else
+                {
+                    <div class="fw-semibold">
+                        Insufficient data
+                    </div>
+                }
+            </div>
+
+            <div class="text-end">
+                <div class="fw-semibold small">
+                    @soil.Label
+                </div>
+
+                <div class="small text-muted">
+                    Provisional assessment
+                </div>
+            </div>
+        </div>
+
+        <div class="small text-muted mt-2">
+            Sensors:
+            @allocation.ReportingRecently reporting /
+            @allocation.Installed installed
+            · @allocation.Suggested suggested
+        </div>
+    </div>
+
+    @if (zeroCount >= 3)
+    {
+        <div class="alert alert-warning small">
+            Several sensor readings are zero.
+            Check whether the probe was connected
+            and measuring correctly before relying
+            on this result.
+        </div>
+    }
+
+    @if (!soil.Score.HasValue)
+    {
+        <div class="alert alert-secondary small">
+            CropCare needs a recent, complete sensor
+            reading to evaluate the zone's soil condition.
+        </div>
+    }
+
+    <!-- RECOMMENDATIONS -->
+
+    <h3 class="h6 fw-bold text-success mb-3">
+        Recommended actions
+    </h3>
+
+    @if (actions.Count == 0)
+    {
+        <p class="text-muted small">
+            No additional actions were generated
+            for this assessment.
+        </p>
+    }
+    else
+    {
+        @foreach (var action in actions)
+        {
+            <div class="border rounded-3 p-3 mb-2">
+
+                <div class="d-flex flex-wrap
+                                    gap-2 align-items-center mb-1">
+
+                    <strong class="small">
+                        @action.Title
+                    </strong>
+
+                    @if (action.Priority == "high" ||
+                                action.Priority == "medium")
+                    {
+                        <span class="badge bg-warning text-dark">
+                            Needs review
+                        </span>
+                    }
+                </div>
+
+                <p class="small mb-0">
+                    @action.WhatToDo
+                </p>
+            </div>
+        }
+    }
+
+    <!-- DOSAGE LIMITATION -->
+
+    <p class="small text-muted mt-3 mb-0">
+        Fertilizer amounts are not calculated directly
+        from unverified NPK sensor measurements.
+    </p>
+
+</div>
+
+<div class="modal-footer justify-content-between">
+
+    <a asp-controller="Advisories"
+       asp-action="Index"
+       asp-route-zoneId="@Model.ZoneId"
+       class="small text-success text-decoration-none">
+
+        Historical details (Pro)
+    </a>
+
+    <button type="button"
+            class="btn btn-success"
+            data-bs-dismiss="modal">
+        Close
+    </button>
+</div>

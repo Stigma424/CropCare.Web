@@ -64,7 +64,7 @@
     <div class="card border-danger rounded-4">
         <div class="card-body p-4">
             <h2 class="h6 text-danger">Remove sensor registration</h2>
-            <p class="text-muted small">QR claim reuse has not been implemented yet. Remove only if you understand it cannot be re-paired with the same consumed claim at present.</p>
+            <p class="text-muted small">Unpairing releases this device for pairing again with its original QR. Historical readings remain stored.</p>
             <form asp-action="Delete" asp-route-id="@s.SensorId" method="post" asp-antiforgery="true"
                   onsubmit="return confirm('Remove sensor registration?');">
                 <button class="btn btn-outline-danger" type="submit">Remove Sensor</button>

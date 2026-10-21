@@ -21,7 +21,7 @@
     {
         <div class="alert alert-warning">@Model.Error</div>
     }
-    <p class="small text-muted">You can pair a pre-registered device even while its ESP32 is offline. Current API claims are one-time; removing a sensor does NOT release the QR for reuse. Simple reusable pairing/unpairing will be a separate future update.</p>
+    <p class="small text-muted">You can pair a pre-registered device even while its ESP32 is offline. When you remove a QR-paired sensor, the API releases its claim so the same QR can be paired again. Historical soil readings are not deleted.</p>
     @if (Model.Sensors.Count == 0)
     {
         <div class="alert alert-secondary">No sensors are registered to this zone yet.</div>
@@ -48,7 +48,7 @@
                                class="btn btn-outline-success mt-auto">View Sensor Details &rarr;</a>
                             <form asp-controller="Sensors" asp-action="Delete" asp-route-id="@item.Sensor.SensorId"
                                   method="post" asp-antiforgery="true" class="mt-2"
-                                  onsubmit="return confirm('Remove this sensor registration? Re-pairing its old QR remains blocked.');">
+                                  onsubmit="return confirm('Unpair this sensor? Its original QR can be used again. Existing soil history is kept.');">
                                 <button class="btn btn-outline-danger w-100" type="submit">Remove Sensor</button>
                             </form>
                         </div>
@@ -59,7 +59,7 @@
         <div class="card border-danger rounded-4 mt-4">
             <div class="card-body p-4">
                 <h2 class="h6 text-danger fw-bold">Remove all sensors from this zone</h2>
-                <p class="small text-muted">This permanently removes registrations one by one. Historical records remain in Firestore but may no longer be accessible through these registrations. Existing QR claims will stay consumed.</p>
+                <p class="small text-muted">This permanently removes registrations one by one. Historical records remain in Firestore but may no longer be accessible through these registrations. QR-paired devices will have their registry claims released.</p>
                 <form asp-controller="Sensors" asp-action="DeleteAll" method="post" asp-antiforgery="true"
                       onsubmit="return confirm('Remove all sensor registrations from this zone? This cannot be undone.');">
                     <input type="hidden" name="zoneId" value="@Model.Zone.ZoneId" />

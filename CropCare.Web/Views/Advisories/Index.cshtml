@@ -1,86 +1,411 @@
-﻿@model CropCare.Web.Models.AdvisoriesPageModel
+﻿@model CropCare.Web.Models.ZoneAssessmentPageModel
+
 @{
-    ViewData["Title"] = "Fertilizer Advisory Preview";
-    var advisory = Model.Advisory;
+    ViewData["Title"] = "Historical Assessment";
+
+    var assessment = Model.Assessment;
+    var soil = assessment?.SoilHealth;
+    var allocation = assessment?.SensorAllocation;
 }
+
 <div class="py-4">
-    <h1 class="h2 text-success fw-bold">Fertilizer Advisory Preview</h1>
-    <p class="text-muted">Corn growth-stage context and experimental NPK comparisons from previously stored measurements.</p>
-    <div class="alert alert-warning" role="note">
-        <strong>For school demonstration only.</strong> This is not a validated fertilizer application plan.
-        Do not use this page to determine fertilizer type, dosage, or timing.
+
+    <div class="d-flex flex-wrap
+                justify-content-between
+                align-items-center gap-2 mb-3">
+
+        <div>
+            <h1 class="h2 text-success fw-bold">
+                Historical Assessment
+            </h1>
+
+            <p class="text-muted mb-0">
+                CropCare Pro · Recommendation testing
+                and debugging
+            </p>
+        </div>
+
+        <a asp-controller="Zones"
+           asp-action="Index"
+           class="btn btn-outline-success">
+
+            Back to Zones
+        </a>
     </div>
 
-    @if (Model.Error != null)
+    <div class="alert alert-info">
+        <strong>Historical test mode.</strong>
+
+        This evaluates stored seven-in-one sensor readings.
+        The result is a simulation, not a current soil
+        assessment or a verified fertilizer prescription.
+        No push notifications are sent.
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
     {
-        <div class="alert alert-danger" role="alert">@Model.Error</div>
+        <div class="alert alert-danger">
+            @Model.Error
+        </div>
     }
+
     @if (Model.Zones.Count == 0)
     {
-        <div class="alert alert-info">You have no farm zones yet. <a asp-controller="Zones" asp-action="Create">Create one</a> to begin.</div>
+        <div class="alert alert-secondary">
+            No zones available.
+        </div>
     }
     else
     {
-        <form asp-controller="Advisories" asp-action="Index" method="get" class="row g-2 mb-4">
-            <div class="col-12 col-md-8">
-                <label for="zoneId" class="form-label fw-semibold">Farm zone</label>
-                <select id="zoneId" name="zoneId" class="form-select">
-                    @foreach (var zone in Model.Zones)
-                    {
-                        <option value="@zone.ZoneId" selected="@(Model.SelectedZoneId == zone.ZoneId)">@zone.ZoneName</option>
-                    }
-                </select>
-            </div>
-            <div class="col-12 col-md-4 align-self-end">
-                <button class="btn btn-success w-100" type="submit">View advisory</button>
+        <form asp-controller="Advisories"
+              asp-action="Index"
+              method="get"
+              class="card border-0 shadow-sm rounded-4 mb-4">
+
+            <div class="card-body p-4">
+                <label for="zoneId"
+                       class="form-label fw-semibold">
+                    Select farm zone
+                </label>
+
+                <div class="row g-2">
+
+                    <div class="col-md-8">
+                        <select id="zoneId"
+                                name="zoneId"
+                                class="form-select">
+
+                            @foreach (var zone in Model.Zones)
+                            {
+                                <option value="@zone.ZoneId"
+                                        selected="@(Model.SelectedZoneId == zone.ZoneId)">
+                                    @zone.ZoneName
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <button type="submit"
+                                class="btn btn-success w-100">
+                            Run Historical Test
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
     }
 
-    @if (advisory != null)
+    @if (Model.Preview != null)
     {
-        <div class="card shadow-sm border-0 rounded-4 mb-3">
-            <div class="card-body p-4">
-                <h2 class="h4 text-success fw-bold">@advisory.ZoneName</h2>
-                <p class="mb-1"><strong>Stage:</strong> @advisory.StageName</p>
-                <p class="mb-1"><strong>Days after planting:</strong> @(advisory.DaysAfterPlanting?.ToString() ?? "Not set")</p>
-                <p class="mb-1"><strong>Sample sensor:</strong> @(advisory.SensorName ?? "No readings found")</p>
-                <p class="mb-1"><strong>Reading timestamp:</strong> @CropCare.Web.Models.SensorDates.Format(advisory.RecordedAtMs)</p>
-                <p class="mb-3"><strong>Freshness:</strong> @advisory.ReadingStatus</p>
-                <div class="alert alert-secondary mb-0">@advisory.Summary</div>
-            </div>
-        </div>
-        @if (advisory.Reading != null)
-        {
-            <div class="card shadow-sm border-0 rounded-4 mb-3">
-                <div class="card-body p-4">
-                    <h2 class="h5 text-success">Recorded NPK values</h2>
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead><tr><th>Nutrient</th><th>Saved reading (mg/kg)</th><th>Android prototype reference (mg/kg)</th></tr></thead>
-                            <tbody>
-                                <tr><td>Nitrogen</td><td>@(advisory.Reading.Nitrogen?.ToString("0.##") ?? "—")</td><td>@(advisory.PrototypeTargets?.Nitrogen?.ToString("0.##") ?? "—")</td></tr>
-                                <tr><td>Phosphorus</td><td>@(advisory.Reading.Phosphorus?.ToString("0.##") ?? "—")</td><td>@(advisory.PrototypeTargets?.Phosphorus?.ToString("0.##") ?? "—")</td></tr>
-                                <tr><td>Potassium</td><td>@(advisory.Reading.Potassium?.ToString("0.##") ?? "—")</td><td>@(advisory.PrototypeTargets?.Potassium?.ToString("0.##") ?? "—")</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="small text-muted mb-0">The Android stage-reference values are development assumptions, not validated soil-test sufficiency thresholds.</p>
-                </div>
-            </div>
-        }
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-body p-4">
-                <h2 class="h5 text-success">Next steps</h2>
-                <ul>
-                    @foreach (var item in advisory.ActionItems)
-                    {
-                        <li class="mb-2">@item</li>
-                    }
-                </ul>
-                <p class="small text-muted">@advisory.Disclaimer</p>
-                <a asp-controller="Monitoring" asp-action="Index" class="btn btn-outline-success">Review sensor monitoring</a>
+        <div class="alert alert-light border">
+            <strong>Historical snapshot:</strong>
+
+            @if (Model.Preview.SnapshotAtMs is long snapshot)
+            {
+                <span>
+                    @CropCare.Web.Models.SensorDates.Format(snapshot)
+                </span>
+            }
+            else
+            {
+                <span>Unavailable</span>
+            }
+
+            <div class="small mt-2">
+                @Model.Preview.Warning
             </div>
         </div>
     }
+
+    @if (assessment != null)
+    {
+        <!-- ASSESSMENT SUMMARY -->
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm
+                                rounded-4 h-100">
+
+                    <div class="card-body p-4">
+
+                        <h2 class="h5 fw-bold text-success">
+                            Soil Condition Score
+                        </h2>
+
+                        @if (soil?.Score is double score)
+                        {
+                            <div class="display-5 fw-bold text-success">
+                                @score.ToString("0.#")/100
+                            </div>
+
+                            <p class="mb-1">
+                                @soil.Label
+                            </p>
+                        }
+                        else
+                        {
+                            <p>Insufficient readings</p>
+                        }
+
+                        <div class="small text-muted">
+                            @soil?.Quality
+                            ·
+                            @soil?.ValidSensors sensor(s) used
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm
+                                rounded-4 h-100">
+
+                    <div class="card-body p-4">
+
+                        <h2 class="h5 fw-bold text-success">
+                            Sensor Coverage
+                        </h2>
+
+                        @if (allocation != null)
+                        {
+                            <p class="mb-1">
+                                <strong>Suggested:</strong>
+                                @allocation.Suggested
+                            </p>
+
+                            <p class="mb-1">
+                                <strong>Installed:</strong>
+                                @allocation.Installed
+                            </p>
+
+                            <p class="mb-1">
+                                <strong>Reporting:</strong>
+                                @allocation.ReportingRecently
+                            </p>
+
+                            <p class="mb-0">
+                                <strong>Additional suggested:</strong>
+                                @allocation.AdditionalSuggested
+                            </p>
+                        }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CROP STAGE -->
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+
+            <h2 class="h5 text-success fw-bold">
+                Crop Information
+            </h2>
+
+            <p class="mb-1">
+                <strong>Zone:</strong>
+                @assessment.ZoneName
+            </p>
+
+            <p class="mb-1">
+                <strong>Stage:</strong>
+                @assessment.CropStage.Replace('_', ' ')
+            </p>
+
+            <p class="mb-1">
+                <strong>Days after planting:</strong>
+                @(assessment.DaysAfterPlanting?.ToString()
+                                ?? "Unknown")
+            </p>
+
+                <p class="mb-0">
+                    <strong>Ruleset:</strong>
+                    @assessment.RulesetVersion
+                </p>
+            </div>
+        </div>
+
+        <!-- PARAMETER BREAKDOWN -->
+    @if (soil?.Parameters.Count > 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+
+                    <h2 class="h5 text-success fw-bold">
+                        Sensor Parameter Breakdown
+                    </h2>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Reading</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                    <th>Rule ID</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var item in soil.Parameters)
+                                {
+                                    <tr>
+                                        <td class="text-capitalize">
+                                            @item.Parameter
+                                        </td>
+
+                                        <td>
+                                            @item.Value.ToString("0.##")
+                                            @item.Unit
+                                        </td>
+
+                                        <td>
+                                            @item.Score/100
+                                        </td>
+
+                                        <td>
+                                            @item.Status.Replace('_', ' ')
+                                        </td>
+
+                                        <td class="small">
+                                            @item.RuleId
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- RECOMMENDATION DEBUGGING -->
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+
+                <h2 class="h5 text-success fw-bold">
+                    Generated Recommendations
+                </h2>
+
+                @foreach (var action in assessment.Recommendations)
+                {
+                    <div class="border rounded-3 p-3 mb-3">
+
+                        <div class="fw-bold mb-2">
+                            @action.Title
+                        </div>
+
+                        <p class="mb-2">
+                            @action.WhatToDo
+                        </p>
+
+                        <div class="small text-muted">
+                            <strong>Reason:</strong>
+                            @action.Why
+                        </div>
+
+                        <div class="small text-muted mt-1">
+                            <strong>Rule:</strong>
+                            @action.SourceId
+                            · Priority: @action.Priority
+                            · Push candidate: @action.PushCandidate
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- FERTILIZER REFERENCE -->
+        @if (assessment.ReferenceFertilizerPlan.Entries.Count > 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+
+                    <h2 class="h5 text-success fw-bold">
+                        Published Fertilizer Reference
+                    </h2>
+
+                    <div class="alert alert-warning">
+                        @assessment.ReferenceFertilizerPlan.Warning
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Timing</th>
+                                    <th>kg/ha</th>
+                                    <th>Plot kg</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var entry in
+                                                        assessment.ReferenceFertilizerPlan.Entries)
+                                {
+                                    <tr>
+                                        <td>
+                                            @entry.Product
+                                            (@entry.FertilizerGrade)
+                                        </td>
+
+                                        <td>
+                                            @entry.ApplicationTiming
+                                        </td>
+
+                                        <td>
+                                            @entry.KgPerHectare.ToString("0.##")
+                                        </td>
+
+                                        <td>
+                                            @entry.KgForPlot.ToString("0.##")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- TECHNICAL LIMITATIONS -->
+        @if (assessment.Limitations.Count > 0)
+        {
+            <details class="card border-0 shadow-sm
+                                    rounded-4 mb-4">
+
+                <summary class="card-body fw-semibold">
+                    Assessment Limitations
+                </summary>
+
+                <div class="px-4 pb-4">
+                    <ul class="mb-0">
+                        @foreach (var limitation in
+                                        assessment.Limitations)
+                        {
+                            <li>@limitation</li>
+                        }
+                    </ul>
+                </div>
+            </details>
+        }
+    }
+    else if (Model.Zones.Count > 0 &&
+    string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-secondary">
+            No historical assessment could be generated.
+            Check whether the zone has stored sensor readings.
+        </div>
+    }
+
 </div>

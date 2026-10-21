@@ -6,7 +6,7 @@
     <a asp-controller="Sensors" asp-action="Index" class="text-success text-decoration-none">&larr; Back to My Sensors</a>
     <h1 class="fw-bold text-success mt-3">Pair a CropCare Sensor</h1>
     <p class="text-muted">Scan a CropCare QR code using your camera, or upload a QR image. The device can be switched off during pairing, provided its claim was provisioned in Firestore.</p>
-    <div class="alert alert-warning small">The current API still treats each QR as a one-time claim. If the QR was previously claimed, the API will reject re-pairing even after deletion. Reusable school-demo pairing will be implemented later.</div>
+    <div class="alert alert-warning small">A registered QR can be used again after its sensor is unpaired. A QR cannot be paired to two zones or users at the same time. Offline devices can be paired.</div>
 
     <div class="row g-4">
         <div class="col-12 col-lg-7">
