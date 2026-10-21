@@ -45,6 +45,9 @@ public sealed class ZoneOverview
     public ZoneAverageReading Averages { get; set; } = new();
     public string? Error { get; set; }
     public bool Incomplete { get; set; }
+    // Null means membership status could not be loaded (fail closed).
+    public bool? IsSubscribed { get; set; }
+    public string SubscriptionState { get; set; } = "unknown";
 
     // The exact five 20-point rules currently used by the Android prototype.
     // This is NOT a validated soil-health / agronomic score.
@@ -73,8 +76,15 @@ public sealed class ZoneOverview
         _ => "Pending evaluation"
     };
     public string RecommendationText => Zone.IsHarvested
-        ? "Post-harvest: fertilizer recommendation will be available when the advisory engine is finalized."
-        : "Fertilizer recommendation is being prepared. Review measured soil values before taking action.";
+        ? "Post-harvest zone. Recommendations will be available after validation of the advice engine."
+        : IsSubscribed == true
+            ? "Pro membership active. Your customized fertilizer recommendation is being prepared."
+            : SubscriptionState == "pending"
+                ? "Your Pro request is pending verification. Recommendations will unlock after approval and engine validation."
+                : IsSubscribed == false
+                    ? "Subscribe to CropCare Pro to unlock future detailed fertilizer recommendations."
+                    : "Subscription status unavailable. Fertilizer recommendations are temporarily hidden.";
+
 }
 
 public sealed class CropCareDashboardViewModel

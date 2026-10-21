@@ -37,12 +37,27 @@ public sealed class ZoneOverviewService
     public Task<ZoneRecord> GetZoneAsync(string zoneId, string token, CancellationToken ct) =>
         ReadAsync<ZoneRecord>("api/zones/" + Uri.EscapeDataString(zoneId), token, ct);
 
+    private async Task<SubscriptionStatusDto?> GetSubscriptionAsync(string token, CancellationToken ct)
+    {
+        try
+        {
+            var status = await ReadAsync<SubscriptionStatusDto>("api/subscriptions/me", token, ct);
+            return status;
+        }
+        catch (HttpRequestException)
+        {
+            // Unavailable API => UNKNOWN, never accidentally treat as Pro.
+            return null;
+        }
+    }
+
     public async Task<List<ZoneOverview>> GetDashboardZonesAsync(string token, CancellationToken ct)
     {
         var zones = await GetZonesAsync(token, ct);
         var sensors = await ReadAsync<List<SensorRecord>>("api/sensors", token, ct);
+        var membership = await GetSubscriptionAsync(token, ct);
         var items = zones.OrderBy(z => z.ZoneName, StringComparer.OrdinalIgnoreCase)
-            .Select(z => new ZoneOverview { Zone = z }).ToList();
+            .Select(z => new ZoneOverview { Zone = z, IsSubscribed = membership?.IsSubscribed, SubscriptionState = membership?.Status ?? "unknown" }).ToList();
         foreach (var item in items)
             item.Sensors = sensors.Where(s => s.ZoneId == item.Zone.ZoneId)
                 .Select(s => new ZoneSensorSnapshot { Sensor = s }).ToList();
@@ -54,9 +69,12 @@ public sealed class ZoneOverviewService
     {
         var zoneId = Uri.EscapeDataString(zone.ZoneId);
         var sensors = await ReadAsync<List<SensorRecord>>("api/sensors?zoneId=" + zoneId, token, ct);
+        var membership = await GetSubscriptionAsync(token, ct);
         var item = new ZoneOverview
         {
             Zone = zone,
+            IsSubscribed = membership?.IsSubscribed,
+            SubscriptionState = membership?.Status ?? "unknown",
             Sensors = sensors.Where(s => s.ZoneId == zone.ZoneId)
                 .Select(s => new ZoneSensorSnapshot { Sensor = s }).ToList()
         };

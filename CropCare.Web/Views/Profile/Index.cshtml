@@ -11,6 +11,7 @@
         <div class="d-flex flex-wrap gap-2">
             <a asp-action="Edit" class="btn btn-success">Edit Profile</a>
             <a asp-action="ChangePassword" class="btn btn-outline-success">Change Password</a>
+            <a asp-controller="Subscription" asp-action="Index" class="btn btn-outline-success">Subscription &amp; Membership</a>
         </div>
     </div>
     @if (TempData["Notice"] is string notice)

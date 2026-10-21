@@ -81,10 +81,11 @@
                         <div class="d-flex flex-wrap gap-2">
                             <a asp-controller="Sensors" asp-action="Index" asp-route-zoneId="@zone.ZoneId"
                                class="btn btn-success">View Zone Sensors &rarr;</a>
-                            <button class="btn btn-outline-secondary" type="button" disabled>Add Sensor (on hold)</button>
+                            <a asp-controller="Sensors" asp-action="Pair" asp-route-zoneId="@zone.ZoneId"
+                               class="btn btn-outline-success">+ Pair Sensor QR</a>
                         </div>
                     </div>
-                    <p class="small text-muted mt-3 mb-0">Add Sensor / QR pairing will be enabled here after the reusable QR school-demo workflow is ready.</p>
+                    <p class="small text-muted mt-3 mb-0">QR pairing works with the device powered off if the device is pre-registered in Firestore. The CURRENT API still uses a one-time claim; do not remove a paired sensor expecting to re-use the same QR yet.</p>
                 </div>
             </div>
         </div>

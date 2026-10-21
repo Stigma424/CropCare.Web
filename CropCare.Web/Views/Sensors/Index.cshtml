@@ -10,7 +10,8 @@
             <h1 class="fw-bold text-success mb-1">@Model.Zone.ZoneName — Sensors</h1>
             <p class="text-muted mb-0">Manage the sensors assigned to this farm zone.</p>
         </div>
-        <button class="btn btn-outline-secondary" disabled title="QR pairing redesign is on hold">+ Add Sensor (coming soon)</button>
+        <a asp-controller="Sensors" asp-action="Pair" asp-route-zoneId="@Model.Zone.ZoneId"
+           class="btn btn-success">+ Pair Sensor QR</a>
     </div>
     @if (TempData["Success"] is string success)
     {
@@ -20,7 +21,7 @@
     {
         <div class="alert alert-warning">@Model.Error</div>
     }
-    <p class="small text-muted">QR pairing/unpairing redesign remains on hold. Current removal is a sensor-registration deletion; it does not restore a consumed QR claim.</p>
+    <p class="small text-muted">You can pair a pre-registered device even while its ESP32 is offline. Current API claims are one-time; removing a sensor does NOT release the QR for reuse. Simple reusable pairing/unpairing will be a separate future update.</p>
     @if (Model.Sensors.Count == 0)
     {
         <div class="alert alert-secondary">No sensors are registered to this zone yet.</div>

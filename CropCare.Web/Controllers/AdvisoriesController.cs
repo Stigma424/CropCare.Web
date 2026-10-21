@@ -61,6 +61,11 @@ public sealed class AdvisoriesController : Controller
             using var request = Authorized(HttpMethod.Get, path, token);
             using var response = await api.SendAsync(request, ct);
             if (response.StatusCode == HttpStatusCode.Unauthorized) return await Expired(session);
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                TempData["Error"] = "CropCare Pro is required for the prototype advisory. Your zone readings remain free.";
+                return RedirectToAction("Index", "Subscription");
+            }
             if (!response.IsSuccessStatusCode)
             {
                 model.Error = "Prototype advisory is temporarily unavailable.";

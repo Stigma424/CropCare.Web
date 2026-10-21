@@ -1,0 +1,94 @@
+﻿@model CropCare.Web.Models.SubscriptionPageViewModel
+@{
+    ViewData["Title"] = "Subscription & Membership";
+    var plan = Model.Status.Status?.ToLowerInvariant() ?? "unknown";
+}
+<div class="py-4">
+    <a asp-controller="Profile" asp-action="Index" class="text-success text-decoration-none">&larr; Back to Profile</a>
+    <div class="mt-3 mb-4">
+        <h1 class="fw-bold text-success">Subscription &amp; Membership</h1>
+        <p class="text-muted">Check your current plan and submit a GCash receipt for manual verification.</p>
+    </div>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success" role="status">@success</div>
+    }
+    @if (Model.Error != null)
+    {
+        <div class="alert alert-warning" role="alert">@Model.Error</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold text-success">Current Plan</h2>
+                    @if (plan == "pro")
+                    {
+                        <span class="badge bg-success fs-6 mb-3">PRO SUBSCRIBED</span>
+                    }
+                    else if (plan == "pending")
+                    {
+                        <span class="badge bg-warning text-dark fs-6 mb-3">PENDING VERIFICATION</span>
+                    }
+                    else if (plan == "rejected")
+                    {
+                        <span class="badge bg-danger fs-6 mb-3">NEEDS REVIEW</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary fs-6 mb-3">FREE USER</span>
+                    }
+                    <p>@Model.Status.Message</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Status.ReferenceLastFour))
+                    {
+                        <p class="small text-muted">Latest submitted reference ends in <strong>@Model.Status.ReferenceLastFour</strong>.</p>
+                    }
+                    <p class="small text-muted mb-0">Only the CropCare team can approve a payment. Sending a reference number does not activate Pro automatically.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold text-success">CropCare Pro</h2>
+                    <p>Pro membership is intended to unlock detailed, validated corn fertilizer recommendations once the recommendation engine is ready.</p>
+                    <p class="small text-muted">Sensor readings, zone monitoring, and historical records remain available to Free users.</p>
+
+                    @if (plan == "pro")
+                    {
+                        <div class="alert alert-success">Your Pro membership is active. Fertilizer recommendation calculations are still under development.</div>
+                    }
+                    else if (plan == "pending")
+                    {
+                        <div class="alert alert-info">Your payment reference is awaiting manual review by the CropCare team.</div>
+                    }
+                    else if (Model.Error != null)
+                    {
+                        <div class="alert alert-secondary">Submission is temporarily unavailable while membership status cannot be verified.</div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning small">
+                            <strong>School project manual-payment flow.</strong> Use only payment instructions and recipient details confirmed directly by the CropCare project team.
+                            No payment is processed by this website. Do not enter a GCash PIN or OTP.
+                        </div>
+                        <form asp-controller="Subscription" asp-action="Submit" method="post" asp-antiforgery="true">
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+                            <label asp-for="ReferenceNumber" class="form-label fw-semibold"></label>
+                            <input asp-for="ReferenceNumber" inputmode="numeric" pattern="[0-9]{8,20}"
+                                   maxlength="20" autocomplete="off" class="form-control mb-1"
+                                   placeholder="Enter receipt reference number" />
+                            <span asp-validation-for="ReferenceNumber" class="text-danger small d-block mb-3"></span>
+                            <button type="submit" class="btn btn-success">Submit for Manual Verification</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

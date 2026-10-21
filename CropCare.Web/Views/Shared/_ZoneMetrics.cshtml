@@ -57,6 +57,11 @@ else
         <div class="border rounded-3 p-3 h-100">
             <h3 class="h6 text-success">Fertilizer Recommendation</h3>
             <p class="mb-0 small">@Model.RecommendationText</p>
+            @if (!Model.Zone.IsHarvested && Model.IsSubscribed == false)
+            {
+                <a asp-controller="Subscription" asp-action="Index"
+                   class="btn btn-sm btn-outline-success mt-3">View Pro Membership</a>
+            }
             <p class="text-muted small mt-2 mb-0">Placeholder only — no fertilizer type or dose is calculated here.</p>
         </div>
     </div>
