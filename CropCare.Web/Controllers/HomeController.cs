@@ -1,40 +1,15 @@
-
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using CropCare.Web.Models;
 namespace CropCare.Web.Controllers;
-
-public class HomeController : Controller
+public sealed class HomeController : Controller
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public HomeController(IHttpClientFactory httpClientFactory)
+    [HttpGet] public IActionResult Index() => RedirectToAction("Index", "Dashboard");
+    [HttpGet] public IActionResult Privacy() => View();
+    [AllowAnonymous, ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
     {
-        _httpClientFactory = httpClientFactory;
-    }
-
-    public async Task<IActionResult> Index()
-    {
-        try
-        {
-            var client = _httpClientFactory
-                .CreateClient("CropCareApi");
-
-            using var response =
-                await client.GetAsync("api/health");
-
-            ViewBag.ApiStatus = response.IsSuccessStatusCode
-                ? "Connected to CropCare API"
-                : $"API returned HTTP {(int)response.StatusCode}";
-        }
-        catch (HttpRequestException)
-        {
-            ViewBag.ApiStatus = "Cannot connect to API";
-        }
-        catch (TaskCanceledException)
-        {
-            ViewBag.ApiStatus = "API request timed out";
-        }
-
-        return View();
+        Response.StatusCode = 500;
+        return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = HttpContext.TraceIdentifier });
     }
 }

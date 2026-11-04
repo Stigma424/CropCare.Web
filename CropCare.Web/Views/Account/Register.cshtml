@@ -1,65 +1,10 @@
-﻿@model CropCare.Web.Models.RegisterViewModel
-@{
-    ViewData["Title"] = "Register";
-}
-<div class="row justify-content-center py-4 py-lg-5">
-    <div class="col-12 col-lg-9 col-xl-8">
-        <div class="card border-0 rounded-4 shadow-sm overflow-hidden">
-            <div class="row g-0">
-                <div class="col-lg-4 bg-success text-white p-4 p-lg-5 d-flex flex-column justify-content-center">
-                    <h1 class="h2 fw-bold">Join CropCare</h1>
-                    <p>Create your account to manage farm zones and soil monitoring.</p>
-                </div>
-                <div class="col-lg-8 p-4 p-md-5">
-                    <h2 class="h3 text-success fw-bold">Create an Account</h2>
-                    <p class="text-muted">Use an email you can access for password recovery.</p>
-                    <form asp-action="Register" asp-controller="Account" method="post" asp-antiforgery="true">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <label asp-for="FirstName" class="form-label">First name</label>
-                                <input asp-for="FirstName" class="form-control" autocomplete="given-name" />
-                                <span asp-validation-for="FirstName" class="text-danger small"></span>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label asp-for="LastName" class="form-label">Last name</label>
-                                <input asp-for="LastName" class="form-control" autocomplete="family-name" />
-                                <span asp-validation-for="LastName" class="text-danger small"></span>
-                            </div>
-                            <div class="col-12">
-                                <label asp-for="Address" class="form-label">Address</label>
-                                <input asp-for="Address" class="form-control" autocomplete="street-address" />
-                                <span asp-validation-for="Address" class="text-danger small"></span>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label asp-for="Username" class="form-label">Username</label>
-                                <input asp-for="Username" class="form-control" autocomplete="username" />
-                                <span asp-validation-for="Username" class="text-danger small"></span>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label asp-for="Email" class="form-label">Email</label>
-                                <input asp-for="Email" class="form-control" autocomplete="email" />
-                                <span asp-validation-for="Email" class="text-danger small"></span>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label asp-for="Password" class="form-label">Password</label>
-                                <input asp-for="Password" class="form-control" autocomplete="new-password" />
-                                <span asp-validation-for="Password" class="text-danger small"></span>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label asp-for="ConfirmPassword" class="form-label">Confirm password</label>
-                                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
-                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 mt-4 py-2">Create Account</button>
-                        <p class="text-center mt-3 mb-0">Already registered? <a asp-controller="Account" asp-action="Login">Login</a></p>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@model CropCare.Web.Models.RegisterViewModel
+@{ ViewData["Title"] = "Register"; }
+<h1>Register</h1><p class="text-muted">Create your account to get started</p>
+<form class="cc-auth-form" asp-action="Register" method="post" asp-antiforgery="true"><div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<div class="cc-form-grid"><div><label asp-for="FirstName" class="form-label">First name</label><input asp-for="FirstName" class="form-control" autocomplete="given-name" maxlength="80" /><span asp-validation-for="FirstName" class="text-danger"></span></div><div><label asp-for="LastName" class="form-label">Last name</label><input asp-for="LastName" class="form-control" autocomplete="family-name" maxlength="80" /><span asp-validation-for="LastName" class="text-danger"></span></div>
+<div><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" autocomplete="street-address" maxlength="250" /><span asp-validation-for="Address" class="text-danger"></span></div><div><label asp-for="Username" class="form-label"></label><input asp-for="Username" class="form-control" autocomplete="username" maxlength="30" /><span asp-validation-for="Username" class="text-danger"></span></div>
+<div><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" /><span asp-validation-for="Email" class="text-danger"></span></div><div><label asp-for="Password" class="form-label"></label><div class="cc-password"><input asp-for="Password" class="form-control" autocomplete="new-password" maxlength="128" /><button type="button" data-password-toggle="Password" aria-pressed="false">Show</button></div><span asp-validation-for="Password" class="text-danger"></span></div>
+<div><label asp-for="ConfirmPassword" class="form-label">Confirm password</label><div class="cc-password"><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" maxlength="128" /><button type="button" data-password-toggle="ConfirmPassword" aria-pressed="false">Show</button></div><span asp-validation-for="ConfirmPassword" class="text-danger"></span></div></div>
+<small class="text-muted">Use 8–128 characters for your password. Email is used for account recovery; sign in with your username.</small><button class="btn btn-success" type="submit">CREATE ACCOUNT</button></form><a class="cc-back-link" asp-action="Login">BACK TO SIGN IN</a>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

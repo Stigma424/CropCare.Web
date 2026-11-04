@@ -1,27 +1,4 @@
-﻿@model CropCare.Web.Models.RenameSensorViewModel
-@{
-    ViewData["Title"] = "Rename Sensor";
-}
-<div class="py-4">
-    <a asp-action="Details" asp-route-id="@Model.SensorId" class="text-success text-decoration-none">&larr; Back to sensor</a>
-    <div class="card border-0 shadow-sm rounded-4 mt-3 mx-auto" style="max-width:600px;">
-        <div class="card-body p-4">
-            <h1 class="h3 fw-bold text-success mb-3">Rename Sensor</h1>
-            <p class="text-muted">This updates only the display name. The device ID and assigned zone cannot be changed through the current API.</p>
-            <form asp-action="Rename" asp-route-id="@Model.SensorId" method="post" asp-antiforgery="true">
-                <input asp-for="SensorId" type="hidden" />
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                <div class="mb-3">
-                    <label asp-for="SensorName" class="form-label fw-semibold"></label>
-                    <input asp-for="SensorName" class="form-control" maxlength="80" />
-                    <span asp-validation-for="SensorName" class="text-danger small"></span>
-                </div>
-                <button class="btn btn-success" type="submit">Save name</button>
-                <a asp-action="Details" asp-route-id="@Model.SensorId" class="btn btn-outline-secondary">Cancel</a>
-            </form>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@model CropCare.Web.Models.RenameSensorViewModel
+@{ ViewData["Title"] = "Edit Sensor"; }
+<div class="cc-grid"><section class="cc-card"><h2>Update your sensor details</h2><p class="text-muted">Registration: @Model.SensorId</p><p>Renaming a sensor preserves its device identity, QR claim and historical measurements.</p></section><section class="cc-card"><form class="cc-auth-form" asp-action="Rename" asp-route-id="@Model.SensorId" method="post" asp-antiforgery="true"><div asp-validation-summary="ModelOnly" class="text-danger"></div><div><label asp-for="SensorName" class="form-label">Sensor name</label><input asp-for="SensorName" class="form-control" maxlength="80" /><span asp-validation-for="SensorName" class="text-danger"></span></div><div class="cc-auth-actions"><button class="btn btn-success" type="submit">Save</button><a class="btn btn-light" asp-action="Details" asp-route-id="@Model.SensorId">Cancel</a></div></form></section></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

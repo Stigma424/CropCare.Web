@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CropCare.Web.Models;
@@ -76,6 +76,21 @@ public sealed class NotificationsController : Controller
             using var request = Authenticated(method, path, token);
             using var response = await api.SendAsync(request, ct);
             if (response.StatusCode == HttpStatusCode.Unauthorized) return await Expired(session);
+            if (response.IsSuccessStatusCode && id is null)
+            {
+                using var remainingRequest = Authenticated(HttpMethod.Get, "api/notifications?limit=1", token);
+                using var remainingResponse = await api.SendAsync(remainingRequest, ct);
+                if (remainingResponse.StatusCode == HttpStatusCode.Unauthorized) return await Expired(session);
+                if (remainingResponse.IsSuccessStatusCode)
+                {
+                    var remaining = await remainingResponse.Content.ReadFromJsonAsync<List<CropCareNotification>>(cancellationToken: ct);
+                    TempData["Message"] = remaining?.Count > 0
+                        ? "The clear request completed, but notifications remain. The server clears at most 5,000 per request; refresh and choose Clear All again if needed."
+                        : "Notification history cleared.";
+                }
+                else TempData["Error"] = "The clear request completed, but remaining history could not be checked. Refresh to verify.";
+                return RedirectToAction(nameof(Index));
+            }
             TempData[response.IsSuccessStatusCode ? "Message" : "Error"] =
                 response.IsSuccessStatusCode ? "Notification updated." : "Could not update notification.";
         }

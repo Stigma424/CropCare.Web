@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -49,6 +49,23 @@ public sealed class ZoneOverview
     public bool? IsSubscribed { get; set; }
     public string SubscriptionState { get; set; } = "unknown";
 
+    public string MonitoringSummary
+    {
+        get
+        {
+            if (Sensors.Count == 0) return "No sensors registered";
+            if (Sensors.All(s => s.Error != null)) return "Monitoring unavailable";
+            var readings = Sensors.Where(s => s.Latest != null).ToList();
+            if (readings.Count == 0) return Incomplete ? "No readings available; some monitoring requests failed" : "No readings yet";
+            var states = new List<string>();
+            if (Incomplete) states.Add("Some monitoring unavailable");
+            if (readings.Any(s => s.Monitoring?.Status == "stale")) states.Add("Historical / stale readings");
+            if (readings.Any(s => s.Monitoring?.Status == "unknown_time" || s.Latest!.RecordedAtMs <= 0)) states.Add("Unknown reading time");
+            if (readings.Count < Sensors.Count || readings.Any(s => new double?[] { s.Latest!.Nitrogen, s.Latest.Phosphorus, s.Latest.Potassium, s.Latest.Moisture, s.Latest.Ph, s.Latest.Temperature, s.Latest.Ec }.Any(v => !v.HasValue))) states.Add("Partial measurements");
+            if (readings.Any(s => s.Monitoring?.Status == "recent")) states.Add("Recent reading");
+            return states.Count == 0 ? "Recorded measurements; freshness unavailable" : string.Join(" · ", states);
+        }
+    }
     // The exact five 20-point rules currently used by the Android prototype.
     // This is NOT a validated soil-health / agronomic score.
     public int? PrototypeSoilHealth

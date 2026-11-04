@@ -1,34 +1,3 @@
-﻿@model CropCare.Web.Models.CropCareProfile
-@{
-    ViewData["Title"] = "My Profile";
-}
-<div class="py-4">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div>
-            <h1 class="h2 fw-bold text-success">Account Settings</h1>
-            <p class="text-muted mb-0">Your CropCare account information</p>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a asp-action="Edit" class="btn btn-success">Edit Profile</a>
-            <a asp-action="ChangePassword" class="btn btn-outline-success">Change Password</a>
-            <a asp-controller="Subscription" asp-action="Index" class="btn btn-outline-success">Subscription &amp; Membership</a>
-        </div>
-    </div>
-    @if (TempData["Notice"] is string notice)
-    {
-        <div class="alert alert-success" role="status">@notice</div>
-    }
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <div class="row g-4">
-                <div class="col-12 col-sm-6"><strong>First name</strong><div>@(Model.FirstName ?? "—")</div></div>
-                <div class="col-12 col-sm-6"><strong>Middle name</strong><div>@(Model.MiddleName ?? "—")</div></div>
-                <div class="col-12 col-sm-6"><strong>Last name</strong><div>@(Model.LastName ?? "—")</div></div>
-                <div class="col-12 col-sm-6"><strong>Username</strong><div>@(Model.Username ?? "—")</div></div>
-                <div class="col-12 col-sm-6"><strong>Email</strong><div>@(Model.Email ?? "—")</div></div>
-                <div class="col-12 col-sm-6"><strong>Phone number</strong><div>@(Model.PhoneNumber ?? "—")</div></div>
-                <div class="col-12"><strong>Address</strong><div>@(Model.Address ?? "—")</div></div>
-            </div>
-        </div>
-    </div>
-</div>
+@model CropCare.Web.Models.CropCareProfile
+@{ ViewData["Title"] = "Account Settings"; var names = new[]{Model.FirstName,Model.MiddleName,Model.LastName}.Where(x=>!string.IsNullOrWhiteSpace(x)); var initials=string.Concat(new[]{Model.FirstName,Model.LastName}.Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x![0])); }
+<div class="cc-grid"><section class="cc-card cc-stack"><div class="cc-avatar">@initials</div><h2>@string.Join(" ",names)</h2><p class="text-success">@Model.Username</p><a class="btn btn-light align-self-start" asp-action="Edit">Edit Profile</a></section><section class="cc-card"><h2>Account information</h2>@foreach(var field in new[]{("First name",Model.FirstName),("Middle name",Model.MiddleName),("Last name",Model.LastName),("Phone number",Model.PhoneNumber),("Email",Model.Email),("Address",Model.Address)}){<div class="cc-details-row"><span>@field.Item1</span><strong>@(string.IsNullOrWhiteSpace(field.Item2) ? "Not set" : field.Item2)</strong></div>}<div class="cc-actions mt-4"><a class="btn btn-success" asp-action="ChangePassword">Change Password</a><a class="btn btn-light" asp-controller="Settings" asp-action="Index">Back to Settings</a></div></section></div>

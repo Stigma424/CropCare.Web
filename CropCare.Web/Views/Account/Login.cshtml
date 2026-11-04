@@ -1,45 +1,10 @@
-﻿@model CropCare.Web.Models.LoginViewModel
-@{
-    ViewData["Title"] = "Login";
-}
-<div class="row justify-content-center py-4 py-lg-5">
-    <div class="col-12 col-xl-10">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div class="row g-0">
-                <div class="col-12 col-lg-6 bg-success text-white p-4 p-lg-5 d-flex flex-column justify-content-center">
-                    <h1 class="display-6 fw-bold">Welcome to CropCare</h1>
-                    <p class="lead">Combining technology and agriculture for better harvests.</p>
-                    <p>Monitor farm zones, sensors, and soil conditions from your phone or computer.</p>
-                </div>
-                <div class="col-12 col-lg-6 bg-white p-4 p-lg-5">
-                    <h2 class="h3 fw-bold text-success">Login</h2>
-                    <p class="text-muted">Use your existing CropCare email and password.</p>
-                    @if (TempData["Notice"] is string notice)
-                    {
-                        <div class="alert alert-success" role="status">@notice</div>
-                    }
-                    <form asp-action="Login" asp-controller="Account" method="post" asp-antiforgery="true">
-                        <input asp-for="ReturnUrl" type="hidden" />
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-                        <div class="mb-3">
-                            <label asp-for="Email" class="form-label">Email</label>
-                            <input asp-for="Email" class="form-control form-control-lg" autocomplete="username" />
-                            <span asp-validation-for="Email" class="text-danger small"></span>
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label">Password</label>
-                            <input asp-for="Password" class="form-control form-control-lg" autocomplete="current-password" />
-                            <span asp-validation-for="Password" class="text-danger small"></span>
-                        </div>
-                        <div class="text-end mb-3"><a asp-action="Request" asp-controller="Recovery">Forgot password?</a></div>
-                        <button type="submit" class="btn btn-success btn-lg w-100">Login</button>
-                    </form>
-                    <p class="text-center mt-4 mb-0">No account yet? <a asp-action="Register" asp-controller="Account">Register</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@model CropCare.Web.Models.LoginViewModel
+@{ ViewData["Title"] = "Login"; }
+<h1>Welcome back</h1><p class="text-muted">Sign in to continue to CropCare</p>
+<form class="cc-auth-form" asp-controller="Account" asp-action="Login" method="post" asp-antiforgery="true">
+<input asp-for="ReturnUrl" type="hidden" /><div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<div><label asp-for="Username" class="form-label"></label><input asp-for="Username" class="form-control" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="Username" /><span asp-validation-for="Username" class="text-danger"></span></div>
+<div><label asp-for="Password" class="form-label"></label><div class="cc-password"><input asp-for="Password" class="form-control" autocomplete="current-password" placeholder="Password" /><button type="button" data-password-toggle="Password" aria-label="Show password" aria-pressed="false">Show</button></div><span asp-validation-for="Password" class="text-danger"></span></div>
+<a asp-controller="Recovery" asp-action="Request" class="fw-bold">Forgot Password?</a><div class="cc-auth-actions"><button class="btn btn-success" type="submit">LOGIN</button><a class="btn btn-light" asp-action="Register">Register</a></div></form>
+<p class="cc-auth-footer text-muted">Don't have an account? <a asp-action="Register">Create an account</a></p>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

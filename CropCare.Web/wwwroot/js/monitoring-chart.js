@@ -1,4 +1,4 @@
-﻿// CropCare Batch 6: dependency-free SVG chart for a single API history page.
+// CropCare Batch 6: dependency-free SVG chart for a single API history page.
 // This script does not send measurements or modify the database.
 (() => {
     'use strict';
@@ -45,7 +45,7 @@
             .map(point => ({ time: Number(point.time), value: Number(point.value) }))
             .sort((a, b) => a.time - b.time);
         host.replaceChildren();
-        const shownRows = table ? Array.from(table.querySelectorAll('tbody tr')) : [];
+        const shownRows = Array.from(document.querySelectorAll('[data-history-card]'));
         let shown = 0;
         for (const tr of shownRows) {
             const match = !day || tr.dataset.readingDate === day;
@@ -94,12 +94,20 @@
             x1: left, y1: top + innerH,
             x2: width - right, y2: top + innerH, stroke: '#67766b'
         }));
-        const coords = points.map(p => `${X(p.time)},${Y(p.value)}`).join(' ');
-        if (points.length > 1) svg.appendChild(make('polyline', {
-            points: coords, fill: 'none', stroke: '#198754',
-            'stroke-width': 3, 'stroke-linejoin': 'round',
-            'stroke-linecap': 'round'
-        }));
+        // Null measurements break a line instead of implying an observed value between samples.
+        let segment = [];
+        const flush = () => {
+            if (segment.length > 1) svg.appendChild(make('polyline', {
+                points: segment.join(' '), fill: 'none', stroke: '#198754',
+                'stroke-width': 3, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+            }));
+            segment = [];
+        };
+        for (const row of visible.slice().sort((a,b) => Number(a.time) - Number(b.time))) {
+            if (row.value === null || !Number.isFinite(Number(row.value)) || !Number.isFinite(Number(row.time)) || Number(row.time) <= 0) flush();
+            else segment.push(`${X(Number(row.time))},${Y(Number(row.value))}`);
+        }
+        flush();
         for (const point of points) {
             const circle = make('circle', {
                 cx: X(point.time), cy: Y(point.value), r: 4,

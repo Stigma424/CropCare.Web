@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using CropCare.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,11 +19,11 @@ public sealed class RecoveryController : Controller
         _logger = logger;
     }
 
-    [HttpGet]
-    public IActionResult Request() => View(new RequestRecoveryCodeViewModel());
+    [HttpGet, ActionName("Request")]
+    public IActionResult RequestCode() => View(new RequestRecoveryCodeViewModel());
 
-    [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Request(
+    [HttpPost, ValidateAntiForgeryToken, ActionName("Request")]
+    public async Task<IActionResult> RequestCode(
         RequestRecoveryCodeViewModel model, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(model);
@@ -63,7 +63,7 @@ public sealed class RecoveryController : Controller
     public IActionResult Verify()
     {
         if (TempData.Peek("RecoveryEmail") is not string)
-            return RedirectToAction(nameof(Request));
+            return RedirectToAction("Request");
         return View(new VerifyRecoveryCodeViewModel());
     }
 
@@ -72,7 +72,7 @@ public sealed class RecoveryController : Controller
         VerifyRecoveryCodeViewModel model, CancellationToken ct)
     {
         if (TempData.Peek("RecoveryEmail") is not string email)
-            return RedirectToAction(nameof(Request));
+            return RedirectToAction("Request");
         if (!ModelState.IsValid) return View(model);
 
         try
@@ -116,7 +116,7 @@ public sealed class RecoveryController : Controller
     {
         if (TempData.Peek("RecoveryEmail") is not string ||
             TempData.Peek("RecoveryTicket") is not string)
-            return RedirectToAction(nameof(Request));
+            return RedirectToAction("Request");
         return View(new NewRecoveryPasswordViewModel());
     }
 
@@ -126,7 +126,7 @@ public sealed class RecoveryController : Controller
     {
         if (TempData.Peek("RecoveryEmail") is not string email ||
             TempData.Peek("RecoveryTicket") is not string resetTicket)
-            return RedirectToAction(nameof(Request));
+            return RedirectToAction("Request");
         if (!ModelState.IsValid) return View(model);
 
         try
@@ -147,7 +147,7 @@ public sealed class RecoveryController : Controller
                 TempData.Remove("RecoveryEmail");
                 TempData["RecoveryError"] =
                     "Password reset could not be completed. Request a new code and try again.";
-                return RedirectToAction(nameof(Request));
+                return RedirectToAction("Request");
             }
 
             TempData.Remove("RecoveryTicket");

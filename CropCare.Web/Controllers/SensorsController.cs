@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -66,21 +66,7 @@ public sealed class SensorsController : Controller
             cancellationToken: ct) ?? new();
     }
 
-    private static async Task<string> ApiError(HttpResponseMessage response,
-        string fallback, CancellationToken ct)
-    {
-        try
-        {
-            var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
-            if (json.ValueKind == JsonValueKind.Object &&
-                json.TryGetProperty("error", out var error) &&
-                error.ValueKind == JsonValueKind.String)
-                return error.GetString() ?? fallback;
-        }
-        catch (JsonException) { }
-        catch (NotSupportedException) { }
-        return fallback;
-    }
+    private static Task<string> ApiError(HttpResponseMessage response, string fallback, CancellationToken ct) => ApiResponseReader.ErrorAsync(response, fallback, ct);
 
     private IActionResult Unavailable()
     {
@@ -156,7 +142,7 @@ public sealed class SensorsController : Controller
                 removed++;
             }
             if (removed == sensors.Count)
-                TempData["Success"] = $"Removed {removed} sensor registration(s). The existing QR claims remain consumed.";
+                TempData["Success"] = $"Removed {removed} sensor registration(s). Authorized linked QR claims were released; original QR labels can be reused.";
             else
                 TempData["Error"] = $"Only {removed} of {sensors.Count} sensors were removed. Please review the remainder.";
             return RedirectToAction(nameof(Index), new { zoneId });
@@ -279,11 +265,11 @@ public sealed class SensorsController : Controller
 
     // GET /Sensors/History/{id}?cursor=...
     [HttpGet]
-    public async Task<IActionResult> History(string id, string? cursor, CancellationToken ct)
+    public async Task<IActionResult> History(string id, string? cursor, CancellationToken ct, string? metric = null)
     {
         if (!ValidId(id) || (!string.IsNullOrWhiteSpace(cursor) && !ValidId(cursor)))
             return BadRequest("Invalid sensor ID or cursor.");
-        var vm = new SensorHistoryViewModel { SensorId = id };
+        var vm = new SensorHistoryViewModel { SensorId = id, Metric = MonitoringMetrics.Normalize(metric) };
         try
         {
             string path = SensorPath(id) + "/readings?limit=20";
@@ -388,7 +374,10 @@ public sealed class SensorsController : Controller
                 TempData["Error"] = await ApiError(response, "Cannot remove sensor.", ct);
                 return RedirectToAction(nameof(Details), new { id });
             }
-            TempData["Success"] = "Sensor registration removed. QR re-pairing remains on hold.";
+            var release = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: ct);
+            TempData["Success"] = release.TryGetProperty("qrReusable", out var reusable) && reusable.ValueKind == System.Text.Json.JsonValueKind.True
+                ? "Sensor unpaired. Its original QR can be used again."
+                : "Registration removed. No linked QR claim was changed.";
             return RedirectToAction(nameof(Index), new { zoneId = sensor.ZoneId });
         }
         catch (UnauthorizedAccessException) { return await LoginAgain(); }

@@ -1,61 +1,14 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - CropCare</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-</head>
-<body class="bg-light">
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-            <div class="container">
-                <a class="navbar-brand fw-bold text-success" asp-controller="Dashboard" asp-action="Index">CropCare</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#cropcareNav" aria-controls="cropcareNav"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="cropcareNav">
-                    <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Zones" asp-action="Index">My Zones</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Notifications" asp-action="Index">Notifications</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Profile" asp-action="Index">Profile</a></li>
-                            <li class="nav-item"><span class="navbar-text">@User.Identity.Name</span></li>
-                            <li class="nav-item">
-                                <form asp-controller="Account" asp-action="Logout" method="post" asp-antiforgery="true">
-                                    <button type="submit" class="btn btn-outline-success">Logout</button>
-                                </form>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login">Login</a></li>
-                            <li class="nav-item"><a class="btn btn-success" asp-controller="Account" asp-action="Register">Register</a></li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <main class="container" role="main">
-        @if (TempData["Error"] is string error)
-        {
-            <div class="alert alert-warning mt-3" role="alert">@error</div>
-        }
-        @RenderBody()
-    </main>
-    <footer class="border-top bg-white mt-5">
-        <div class="container text-center text-muted py-3">
-            <small>CropCare — IoT-Based Fertilization Monitoring System</small>
-        </div>
-    </footer>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html>
+@using CropCare.Web.Models
+@{ var controller = ViewContext.RouteData.Values["controller"]?.ToString(); var action = ViewContext.RouteData.Values["action"]?.ToString(); var today = ZoneDates.Today.ToString("dddd, MMMM d, yyyy"); }
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>@ViewData["Title"] · CropCare</title><link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /><link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /></head>
+<body><a class="cc-skip" href="#main-content">Skip to content</a><div class="cc-mobile-brand">CropCare</div><button class="cc-nav-toggle" type="button" aria-controls="website-navigation" aria-expanded="false">Menu</button>
+<aside id="website-navigation" class="cc-sidebar"><a class="cc-brand" asp-controller="Dashboard" asp-action="Index">CropCare</a><p class="cc-tagline">SMART FARMING</p><hr /><nav class="cc-nav" aria-label="Main navigation">
+<a class="@(controller == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">⌂</span>Home</a>
+<a class="@(controller == "Zones" && action == "Create" ? "active" : "")" asp-controller="Zones" asp-action="Create"><span class="cc-nav-icon" aria-hidden="true">+</span>Add Zone</a>
+<a class="@(controller == "Notifications" ? "active" : "")" asp-controller="Notifications" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">◉</span>Notify</a>
+<a class="@(controller is "Settings" or "Profile" or "Subscription" ? "active" : "")" asp-controller="Settings" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">⚙</span>Settings</a>
+</nav><div class="cc-sidebar-bottom"><a asp-controller="Home" asp-action="Privacy">Data and privacy</a></div></aside>
+<main id="main-content" class="cc-main"><header class="cc-titlebar"><div><h1>@ViewData["Title"]</h1><p>@(ViewData["Subtitle"] ?? today)</p></div>@await RenderSectionAsync("PageActions", required: false)</header><div class="cc-page">
+@foreach(var key in new[]{"Error","Success","Notice","Message"}) { if (TempData[key] is string message) { <div class="alert @(key == "Error" ? "alert-warning" : "alert-success")" role="status">@message</div> } }
+@RenderBody()</div><footer class="cc-footer">CropCare · IoT-Based Fertilization Monitoring System</footer></main>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script><script src="~/lib/jquery/dist/jquery.min.js"></script><script src="~/js/site.js" asp-append-version="true"></script>@await RenderSectionAsync("Scripts", required:false)</body></html>

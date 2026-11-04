@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -66,23 +66,7 @@ public sealed class MonitoringController : Controller
     private static string SensorPath(string id) =>
         "api/sensors/" + Uri.EscapeDataString(id);
 
-    private static async Task<string> ReadApiError(
-        HttpResponseMessage response, string fallback, CancellationToken ct)
-    {
-        try
-        {
-            using var doc = await JsonDocument.ParseAsync(
-                await response.Content.ReadAsStreamAsync(ct),
-                cancellationToken: ct);
-            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                doc.RootElement.TryGetProperty("error", out var value) &&
-                value.ValueKind == JsonValueKind.String)
-                return value.GetString() ?? fallback;
-        }
-        catch (JsonException) { }
-        catch (NotSupportedException) { }
-        return fallback;
-    }
+    private static Task<string> ReadApiError(HttpResponseMessage response, string fallback, CancellationToken ct) => ApiResponseReader.ErrorAsync(response, fallback, ct);
 
     // Batch 5: dashboard of saved readings from existing sensors.
     // Does not ingest, simulate, or write measurements.
@@ -199,68 +183,8 @@ public sealed class MonitoringController : Controller
     // Batch 6: latest 50 historical readings per page (cursor from API).
     // Chart/date filtering operate on the currently loaded page only.
     [HttpGet]
-    public async Task<IActionResult> History(
-        string id, string? metric, string? cursor, CancellationToken ct)
+    public IActionResult History(string id, string? metric, string? cursor, CancellationToken ct)
     {
-        if (!ValidId(id) ||
-            (!string.IsNullOrWhiteSpace(cursor) && !ValidId(cursor)))
-            return BadRequest("Invalid sensor or history cursor.");
-
-        var model = new MonitoringHistoryViewModel
-        {
-            Sensor = new SensorRecord { SensorId = id },
-            Metric = MonitoringMetrics.Normalize(metric),
-            Cursor = cursor
-        };
-        try
-        {
-            var api = _clients.CreateClient("CropCareApi");
-            using (var sensorRequest = GetRequest(SensorPath(id)))
-            using (var sensorResponse = await api.SendAsync(sensorRequest, ct))
-            {
-                if (sensorResponse.StatusCode == HttpStatusCode.Unauthorized)
-                    return await LoginAgain();
-                if (sensorResponse.StatusCode == HttpStatusCode.NotFound)
-                    return NotFound("Sensor not found for your account.");
-                if (!sensorResponse.IsSuccessStatusCode)
-                {
-                    model.Error = await ReadApiError(sensorResponse,
-                        "Could not load sensor information.", ct);
-                    return View(model);
-                }
-                model.Sensor = await sensorResponse.Content
-                    .ReadFromJsonAsync<SensorRecord>(cancellationToken: ct)
-                    ?? new SensorRecord();
-            }
-
-            string path = SensorPath(id) + "/readings?limit=50";
-            if (!string.IsNullOrWhiteSpace(cursor))
-                path += "&cursor=" + Uri.EscapeDataString(cursor);
-            using var historyRequest = GetRequest(path);
-            using var historyResponse = await api.SendAsync(historyRequest, ct);
-            if (historyResponse.StatusCode == HttpStatusCode.Unauthorized)
-                return await LoginAgain();
-            if (historyResponse.StatusCode == HttpStatusCode.NotFound)
-                return NotFound("Sensor reading history was not found.");
-            if (!historyResponse.IsSuccessStatusCode)
-                model.Error = await ReadApiError(historyResponse,
-                    "Could not load sensor history.", ct);
-            else
-                model.History = await historyResponse.Content
-                    .ReadFromJsonAsync<SensorHistoryResponse>(cancellationToken: ct)
-                    ?? new();
-            return View(model);
-        }
-        catch (UnauthorizedAccessException) { return await LoginAgain(); }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogWarning(ex, "Sensor history request failed");
-            model.Error = "Cannot contact CropCare API.";
-        }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        {
-            model.Error = "History request timed out.";
-        }
-        return View(model);
+        return RedirectToAction("History", "Sensors", new { id, metric = MonitoringMetrics.Normalize(metric), cursor });
     }
 }

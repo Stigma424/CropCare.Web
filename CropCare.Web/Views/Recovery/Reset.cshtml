@@ -1,31 +1,5 @@
-﻿@model CropCare.Web.Models.NewRecoveryPasswordViewModel
-@{
-    ViewData["Title"] = "Set New Password";
-}
-<div class="row justify-content-center py-4 py-lg-5">
-    <div class="col-12 col-md-8 col-lg-6">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4 p-md-5">
-                <h1 class="h3 fw-bold text-success">Set New Password</h1>
-                <p class="text-muted">Your email code was verified. Choose a new password of at least eight characters.</p>
-                <form asp-controller="Recovery" asp-action="Reset" method="post" asp-antiforgery="true">
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-                    <div class="mb-3">
-                        <label asp-for="NewPassword" class="form-label fw-semibold">New password</label>
-                        <input asp-for="NewPassword" class="form-control form-control-lg" autocomplete="new-password" />
-                        <span asp-validation-for="NewPassword" class="text-danger small"></span>
-                    </div>
-                    <div class="mb-4">
-                        <label asp-for="ConfirmPassword" class="form-label fw-semibold">Confirm password</label>
-                        <input asp-for="ConfirmPassword" class="form-control form-control-lg" autocomplete="new-password" />
-                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
-                    </div>
-                    <button class="btn btn-success w-100" type="submit">Update Password</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@model CropCare.Web.Models.NewRecoveryPasswordViewModel
+@{ ViewData["Title"] = "Reset Password"; }
+<h1>Reset Password</h1><p class="text-muted">Choose a new password for your CropCare account.</p>
+<form class="cc-auth-form" asp-action="Reset" method="post" asp-antiforgery="true"><div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div><div><label asp-for="NewPassword" class="form-label">New password</label><div class="cc-password"><input asp-for="NewPassword" class="form-control" autocomplete="new-password" maxlength="128" /><button type="button" data-password-toggle="NewPassword" aria-pressed="false">Show</button></div><span asp-validation-for="NewPassword" class="text-danger"></span></div><div><label asp-for="ConfirmPassword" class="form-label">Confirm new password</label><div class="cc-password"><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" maxlength="128" /><button type="button" data-password-toggle="ConfirmPassword" aria-pressed="false">Show</button></div><span asp-validation-for="ConfirmPassword" class="text-danger"></span></div><small class="text-muted">Use 8–128 characters. Recovery authorization is single-use.</small><button class="btn btn-success" type="submit">Save Password</button></form><a class="cc-back-link" asp-controller="Account" asp-action="Login">Back to Sign In</a>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

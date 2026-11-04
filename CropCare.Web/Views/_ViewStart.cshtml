@@ -1,3 +1,5 @@
-﻿@{
-    Layout = "_Layout";
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    Layout = controller == "Recovery" || (controller == "Account" && action != "ConfirmLogout") ? "_AuthLayout" : "_Layout";
 }

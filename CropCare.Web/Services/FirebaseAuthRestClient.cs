@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace CropCare.Web.Services;
@@ -53,19 +53,13 @@ public sealed class FirebaseAuthRestClient
         return null;
     }
 
-    public async Task<bool> SendPasswordResetAsync(string email, CancellationToken ct)
+    public async Task<FirebaseSignInResult?> ExchangeCustomTokenAsync(string customToken, CancellationToken ct)
     {
-        using var response = await _client.PostAsJsonAsync(
-            Endpoint("sendOobCode"),
-            new { requestType = "PASSWORD_RESET", email }, ct);
-
-        if (response.IsSuccessStatusCode) return true;
-
-        var error = await ReadFirebaseErrorAsync(response, ct);
-        // Identical response for registered and unregistered email addresses.
-        return error == "EMAIL_NOT_FOUND";
+        using var response = await _client.PostAsJsonAsync(Endpoint("signInWithCustomToken"),
+            new { token = customToken, returnSecureToken = true }, ct);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<FirebaseSignInResult>(cancellationToken: ct) : null;
     }
-
     public async Task<bool> ChangePasswordAsync(
         string freshIdToken, string newPassword, CancellationToken ct)
     {
@@ -95,4 +89,8 @@ public sealed class FirebaseSignInResult
     public string IdToken { get; set; } = "";
     public string LocalId { get; set; } = "";
     public string Email { get; set; } = "";
+    public string ExpiresIn { get; set; } = "0";
+    public int ExpiresInSeconds => int.TryParse(ExpiresIn, out var seconds) ? seconds : 0;
 }
+
+public sealed class UsernameLoginGrant { public string CustomToken { get; set; } = string.Empty; public string UserId { get; set; } = string.Empty; }

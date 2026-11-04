@@ -1,31 +1,6 @@
-﻿@model CropCare.Web.Models.RequestRecoveryCodeViewModel
-@{
-    ViewData["Title"] = "Forgot Password";
-}
-<div class="row justify-content-center py-4 py-lg-5">
-    <div class="col-12 col-md-8 col-lg-6">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4 p-md-5">
-                <h1 class="h3 fw-bold text-success">Forgot Password?</h1>
-                <p class="text-muted">Enter your registered email address. We'll send a six-digit recovery code.</p>
-                @if (TempData["RecoveryError"] is string notice)
-                {
-                    <div class="alert alert-warning" role="alert">@notice</div>
-                }
-                <form asp-controller="Recovery" asp-action="Request" method="post" asp-antiforgery="true">
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-                    <div class="mb-4">
-                        <label asp-for="Email" class="form-label fw-semibold">Email address</label>
-                        <input asp-for="Email" class="form-control form-control-lg" autocomplete="email" />
-                        <span asp-validation-for="Email" class="text-danger small"></span>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Send Recovery Code</button>
-                </form>
-                <a asp-controller="Account" asp-action="Login" class="d-block text-center mt-3">Back to Login</a>
-            </div>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@model CropCare.Web.Models.RequestRecoveryCodeViewModel
+@{ ViewData["Title"] = "Forgot Password"; }
+<h1>Forgot Password?</h1><p class="text-muted">Enter the email address registered with your CropCare account.</p>
+@if(TempData["RecoveryError"] is string error){<div class="alert alert-warning" role="alert">@error</div>}
+<form class="cc-auth-form" asp-action="Request" method="post" asp-antiforgery="true"><div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div><div><label asp-for="Email" class="form-label">Email</label><input asp-for="Email" class="form-control" autocomplete="email" /><span asp-validation-for="Email" class="text-danger"></span></div><button class="btn btn-success" type="submit">Request Password Reset</button></form><a class="cc-back-link" asp-controller="Account" asp-action="Login">← Back to Sign In</a>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

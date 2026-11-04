@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CropCare.Web.Controllers;
 
@@ -38,17 +39,28 @@ public sealed class AccountController : Controller
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
-    [AllowAnonymous, HttpPost, ValidateAntiForgeryToken]
+    [AllowAnonymous, HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("web-login")]
     public async Task<IActionResult> Login(
         LoginViewModel model, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(model);
         try
         {
-            var signIn = await _firebase.SignInAsync(model.Email.Trim(), model.Password, ct);
-            if (signIn is null || string.IsNullOrWhiteSpace(signIn.IdToken))
+            using var authentication = await _clients.CreateClient("CropCareApi").PostAsJsonAsync("api/auth/login",
+                new { username = model.Username.Trim(), password = model.Password }, ct);
+            if (!authentication.IsSuccessStatusCode)
             {
-                ModelState.AddModelError("", "Invalid email or password.");
+                ModelState.AddModelError("", authentication.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                    ? "Invalid username or password." : authentication.StatusCode == System.Net.HttpStatusCode.TooManyRequests
+                    ? "Too many attempts. Please wait a minute and try again." : "Sign-in is temporarily unavailable. Please try again later.");
+                return View(model);
+            }
+            var grant = await authentication.Content.ReadFromJsonAsync<UsernameLoginGrant>(cancellationToken: ct);
+            var signIn = string.IsNullOrWhiteSpace(grant?.CustomToken) ? null : await _firebase.ExchangeCustomTokenAsync(grant.CustomToken, ct);
+            if (signIn is not null && grant is not null) signIn.LocalId = grant.UserId;
+            if (signIn is null || string.IsNullOrWhiteSpace(signIn.IdToken) || string.IsNullOrWhiteSpace(signIn.LocalId))
+            {
+                ModelState.AddModelError("", "Invalid username or password.");
                 return View(model);
             }
 
@@ -70,15 +82,17 @@ public sealed class AccountController : Controller
                 return View(model);
             }
 
-            var sessionId = _tokens.CreateSession(signIn.IdToken);
+            var lifetime = WebSessionPolicy.Lifetime(signIn.ExpiresInSeconds);
+            if (lifetime <= TimeSpan.Zero) { ModelState.AddModelError("", "Sign-in expired. Please try again."); return View(model); }
+            var sessionId = _tokens.CreateSession(signIn.IdToken, lifetime);
             var displayName = !string.IsNullOrWhiteSpace(profile.FirstName)
-                ? profile.FirstName : profile.Username ?? model.Email;
+                ? profile.FirstName : profile.Username ?? model.Username;
 
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, profile.UserId),
                 new(ClaimTypes.Name, displayName),
-                new(ClaimTypes.Email, profile.Email ?? model.Email),
+                new(ClaimTypes.Email, profile.Email ?? ""),
                 new("CropCareSession", sessionId)
             };
 
@@ -90,7 +104,7 @@ public sealed class AccountController : Controller
                 {
                     IsPersistent = false,
                     AllowRefresh = false,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(50)
+                    ExpiresUtc = DateTimeOffset.UtcNow.Add(lifetime)
                 });
 
             if (Url.IsLocalUrl(model.ReturnUrl)) return LocalRedirect(model.ReturnUrl!);
@@ -131,6 +145,22 @@ public sealed class AccountController : Controller
             }
 
             var client = _clients.CreateClient("CropCareApi");
+            async Task<bool> ProfileExists()
+            {
+                using var check = new HttpRequestMessage(HttpMethod.Get, "api/account/me");
+                check.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.IdToken);
+                using var reply = await client.SendAsync(check, ct);
+                if (reply.StatusCode == System.Net.HttpStatusCode.NotFound) return false;
+                reply.EnsureSuccessStatusCode();
+                var existing = await reply.Content.ReadFromJsonAsync<CropCareProfile>(cancellationToken: ct);
+                if (existing?.UserId != user.LocalId) throw new HttpRequestException("Profile ownership could not be verified.");
+                return true;
+            }
+            if (await ProfileExists())
+            {
+                TempData["Notice"] = "Your profile is already complete. Sign in with your username and password.";
+                return RedirectToAction(nameof(Login));
+            }
             using var req = new HttpRequestMessage(HttpMethod.Post, "api/onboarding/profile");
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.IdToken);
             req.Content = JsonContent.Create(new
@@ -142,6 +172,8 @@ public sealed class AccountController : Controller
             });
             using var res = await client.SendAsync(req, ct);
 
+            if (res.StatusCode == System.Net.HttpStatusCode.Conflict && await ProfileExists())
+                return RedirectToAction(nameof(Login));
             if (!res.IsSuccessStatusCode)
             {
                 var error = "Could not finish the CropCare profile. Retry registration with the same email/password.";
@@ -157,7 +189,7 @@ public sealed class AccountController : Controller
                 return View(model);
             }
 
-            TempData["Notice"] = "Registration successful! Please log in with your email and password.";
+            TempData["Notice"] = "Registration successful! Please log in with your username and password.";
             return RedirectToAction(nameof(Login));
         }
         catch (HttpRequestException ex)
@@ -173,37 +205,11 @@ public sealed class AccountController : Controller
     }
 
     [AllowAnonymous, HttpGet]
-    public IActionResult ForgotPassword() => View(new ForgotPasswordViewModel());
-
+    public IActionResult ForgotPassword() => RedirectToAction("Request", "Recovery");
     [AllowAnonymous, HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> ForgotPassword(
-        ForgotPasswordViewModel model, CancellationToken ct)
-    {
-        if (!ModelState.IsValid) return View(model);
-        try
-        {
-            var accepted = await _firebase.SendPasswordResetAsync(model.Email.Trim(), ct);
-            if (!accepted)
-            {
-                ModelState.AddModelError("", "Password recovery is temporarily unavailable. Try again later.");
-                return View(model);
-            }
-
-            // Same response whether or not the email is registered.
-            ViewBag.Message = "If this email has an account, Firebase will send a password reset link. Check your inbox and spam folder.";
-            return View(new ForgotPasswordViewModel());
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogWarning(ex, "CropCare password recovery network failure");
-            ModelState.AddModelError("", "Recovery is temporarily unavailable.");
-        }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        {
-            ModelState.AddModelError("", "Recovery request timed out.");
-        }
-        return View(model);
-    }
+    public IActionResult ForgotPassword(string? email) => RedirectToAction("Request", "Recovery");
+    [Authorize, HttpGet]
+    public IActionResult ConfirmLogout() => View();
 
     [Authorize, HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()

@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -50,23 +50,7 @@ public sealed class ZonesController : Controller
         return RedirectToAction("Login", "Account");
     }
 
-    private static async Task<string> ReadApiError(HttpResponseMessage response, string fallback, CancellationToken ct)
-    {
-        try
-        {
-            var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
-            if (json.ValueKind == JsonValueKind.Object &&
-                json.TryGetProperty("error", out var error) &&
-                error.ValueKind == JsonValueKind.String)
-            {
-                var message = error.GetString();
-                if (!string.IsNullOrWhiteSpace(message)) return message;
-            }
-        }
-        catch (JsonException) { }
-        catch (NotSupportedException) { }
-        return fallback;
-    }
+    private static Task<string> ReadApiError(HttpResponseMessage response, string fallback, CancellationToken ct) => ApiResponseReader.ErrorAsync(response, fallback, ct);
 
     private IActionResult ApiUnavailable()
     {

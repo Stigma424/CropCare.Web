@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace CropCare.Web.Models;
@@ -31,6 +31,13 @@ public sealed class SoilReading
 
 public static class SensorDates
 {
+    public static DateTime? Day(long milliseconds)
+    {
+        if (milliseconds <= 0) return null;
+        try { return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).ToOffset(TimeSpan.FromHours(8)).Date; }
+        catch (ArgumentOutOfRangeException) { return null; }
+    }
+    public static string DayKey(long milliseconds) => Day(milliseconds)?.ToString("yyyy-MM-dd") ?? "";
     public static string Format(long unixMs)
     {
         if (unixMs <= 0) return "Not recorded";
@@ -82,6 +89,7 @@ public sealed class SensorDetailsViewModel
 
 public sealed class SensorHistoryViewModel
 {
+    public string Metric { get; set; } = "nitrogen";
     public SensorHistoryResponse History { get; set; } = new();
     public string SensorId { get; set; } = "";
     public string? Error { get; set; }

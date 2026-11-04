@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -57,7 +57,7 @@ public sealed class ZoneOverviewService
         var sensors = await ReadAsync<List<SensorRecord>>("api/sensors", token, ct);
         var membership = await GetSubscriptionAsync(token, ct);
         var items = zones.OrderBy(z => z.ZoneName, StringComparer.OrdinalIgnoreCase)
-            .Select(z => new ZoneOverview { Zone = z, IsSubscribed = membership?.IsSubscribed, SubscriptionState = membership?.Status ?? "unknown" }).ToList();
+            .Select(z => new ZoneOverview { Zone = z, IsSubscribed = membership?.VerifiedMembership, SubscriptionState = membership?.Status ?? "unknown" }).ToList();
         foreach (var item in items)
             item.Sensors = sensors.Where(s => s.ZoneId == item.Zone.ZoneId)
                 .Select(s => new ZoneSensorSnapshot { Sensor = s }).ToList();
@@ -73,7 +73,7 @@ public sealed class ZoneOverviewService
         var item = new ZoneOverview
         {
             Zone = zone,
-            IsSubscribed = membership?.IsSubscribed,
+            IsSubscribed = membership?.VerifiedMembership,
             SubscriptionState = membership?.Status ?? "unknown",
             Sensors = sensors.Where(s => s.ZoneId == zone.ZoneId)
                 .Select(s => new ZoneSensorSnapshot { Sensor = s }).ToList()

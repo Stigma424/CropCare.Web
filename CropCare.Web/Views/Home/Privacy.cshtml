@@ -1,6 +1,2 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
-}
-<h1>@ViewData["Title"]</h1>
-
-<p>Use this page to detail your site's privacy policy.</p>
+@{ ViewData["Title"] = "Data and privacy"; }
+<section class="cc-card"><h2>Your CropCare information</h2><p>CropCare uses Firebase Authentication for account credentials and stores profile information, farm zones, sensor registrations, soil measurements, notification history and subscription-review records in Cloud Firestore.</p><p>The website uses a protected sign-in cookie. Firebase tokens are held on the web server for the current session. Email is used for registration and recovery; farmers sign in using a username.</p><p>Removing a sensor releases its authorized QR claim and removes its registration. Historical measurements remain stored. Clearing notifications removes notification history, not soil readings.</p><p>Do not submit GCash PINs, OTPs, passwords or private keys. Contact the CropCare project team for questions about your records or access. This page describes the application's current behavior; it does not establish a retention period or promise deletion of retained research data.</p><a class="btn btn-light" asp-controller="Settings" asp-action="Index">Back to Settings</a></section>

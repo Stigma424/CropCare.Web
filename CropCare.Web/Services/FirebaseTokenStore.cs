@@ -1,4 +1,4 @@
-﻿
+
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
@@ -18,7 +18,7 @@ public sealed class FirebaseTokenStore
     }
 
     // Create a random web session ID
-    public string CreateSession(string idToken)
+    public string CreateSession(string idToken, TimeSpan? lifetime = null)
     {
         var sessionId = WebEncoders.Base64UrlEncode(
             RandomNumberGenerator.GetBytes(32));
@@ -26,7 +26,7 @@ public sealed class FirebaseTokenStore
         _cache.Set(
             GetCacheKey(sessionId),
             idToken,
-            TokenLifetime);
+            lifetime ?? TokenLifetime);
 
         return sessionId;
     }

@@ -1,42 +1,4 @@
-﻿@model CropCare.Web.Models.ZoneFormViewModel
-@{
-    ViewData["Title"] = "Edit Farm Zone";
-}
-<div class="py-4">
-    <a asp-action="Details" asp-route-id="@Model.ZoneId" class="text-success text-decoration-none">&larr; Back to Zone Details</a>
-    <div class="row justify-content-center mt-3">
-        <div class="col-12 col-lg-7 col-xl-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4 p-md-5">
-                    <h1 class="h3 fw-bold text-success">Edit Farm Zone</h1>
-                    <p class="text-muted">Update zone information. To mark a harvest or start a new crop, use the Zone Details page.</p>
-                    <form asp-action="Edit" asp-route-id="@Model.ZoneId" method="post" asp-antiforgery="true">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-                        <div class="mb-3">
-                            <label asp-for="ZoneName" class="form-label fw-semibold"></label>
-                            <input asp-for="ZoneName" class="form-control" maxlength="80" />
-                            <span asp-validation-for="ZoneName" class="text-danger small"></span>
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="ZoneAreaSqm" class="form-label fw-semibold"></label>
-                            <input asp-for="ZoneAreaSqm" type="number" min="0.000001" max="100000000" step="any" class="form-control" />
-                            <span asp-validation-for="ZoneAreaSqm" class="text-danger small"></span>
-                        </div>
-                        <div class="mb-4">
-                            <label asp-for="PlantingDate" class="form-label fw-semibold"></label>
-                            <input asp-for="PlantingDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" required />
-                            <span asp-validation-for="PlantingDate" class="text-danger small"></span>
-                        </div>
-                        <div class="d-grid gap-2 d-sm-flex">
-                            <button type="submit" class="btn btn-success flex-fill">Save Changes</button>
-                            <a asp-action="Details" asp-route-id="@Model.ZoneId" class="btn btn-outline-secondary flex-fill">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@model CropCare.Web.Models.ZoneFormViewModel
+@{ ViewData["Title"] = "Edit Zone"; ViewData["FormAction"] = "Edit"; }
+<partial name="_ZoneForm" model="Model" />
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
