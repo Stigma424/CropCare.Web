@@ -6,9 +6,9 @@
     let pending=null,generation=0;
     const message=text=>{content.replaceChildren();const header=document.createElement('div');header.className='modal-header';const title=document.createElement('h2');title.className='modal-title h5';title.textContent='CropCare Recommendations';const close=document.createElement('button');close.className='btn-close';close.type='button';close.setAttribute('data-bs-dismiss','modal');close.setAttribute('aria-label','Close');header.append(title,close);const body=document.createElement('div');body.className='modal-body';body.textContent=text;content.append(header,body);};
     modal.addEventListener('hidden.bs.modal',()=>{generation++;pending?.abort();});
-    modal.addEventListener('show.bs.modal',async event=>{
+    async function load(url){
         pending?.abort();pending=new AbortController();const request=++generation;
-        const url=event.relatedTarget?.getAttribute('data-recommendation-url');message('Loading recommendations…');
+        message('Loading recommendations…');
         if(!url){message('No zone selected.');return;}
         try{
             const response=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:pending.signal,headers:{'X-CropCare-Partial':'true'}});
@@ -18,6 +18,8 @@
             if(!response.ok)throw new Error('The assessment is currently unavailable. Please try again.');
             const html=await response.text();if(request===generation)content.innerHTML=html;
         }catch(error){if(error.name!=='AbortError'&&request===generation)message(error.message||'Assessment unavailable.');}
-    });
+    }
+    modal.addEventListener('show.bs.modal',event=>load(event.relatedTarget?.getAttribute('data-recommendation-url')));
+    modal.addEventListener('change',event=>{const target=event.target;if(target.matches('[data-assessment-program]'))load('/Advisories/Popup?zoneId='+encodeURIComponent(target.dataset.zoneId)+'&programId='+encodeURIComponent(target.value));});
 })();
 </script>

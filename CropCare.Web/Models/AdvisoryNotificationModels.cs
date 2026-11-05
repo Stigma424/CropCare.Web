@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace CropCare.Web.Models;
 
@@ -44,8 +44,9 @@ public sealed class AdvisoriesPageModel
     public string? Error { get; set; }
 }
 
-public sealed class CropCareNotification
-{
+public sealed class CropCareNotification {
+    public string ZoneId {get;set;}="";
+    public string SensorId {get;set;}="";
     public string Id { get; set; } = "";
     public string Title { get; set; } = "";
     public string Message { get; set; } = "";

@@ -1,0 +1,16 @@
+@model CropCare.Web.Models.ZoneAssessmentDto
+<section class="cc-card mb-3" data-assessment-status="@Model.AssessmentStatus">
+<p class="small text-muted">Rules-based advisory · @CropCare.Web.Models.SensorDates.Format(Model.EvaluatedAtMs) · @Model.ProgramId</p>
+<h3 class="h4">@(Model.PrimaryAction?.Title ?? "Assessment unavailable")</h3><p>@Model.PrimaryAction?.WhatToDo</p>
+<p><strong>Provisional score: @(Model.SoilHealth.Score.HasValue ? Model.SoilHealth.Score.Value.ToString("0.#")+"/100" : "Unavailable")</strong> · @Model.SoilHealth.Label</p>
+<p>@Model.SoilHealth.ValidSensors usable / @Model.SensorAllocation.Installed installed · @Model.ExcludedSensors excluded. @(Model.PartialCoverage ? "Partial coverage—this does not describe every part of the zone." : "")</p>
+<details><summary>Reading quality and exclusions</summary>@foreach(var sensor in Model.SensorQuality ?? new()) { <div class="border-top mt-2 pt-2"><strong>@sensor.SensorId — @sensor.Status</strong><p>@sensor.Message</p><small>@string.Join(", ",sensor.ReasonCodes)</small></div> }</details>
+</section>
+<section class="cc-card mb-3"><h3>Recommended checks</h3>@foreach(var action in Model.Recommendations) {<article class="border-top pt-2 mt-2"><h4 class="h6">@action.Title</h4><p>@action.WhatToDo</p><small>@action.Why · @action.SourceId</small></article>}</section>
+<section class="cc-card mb-3"><h3>Published reference program</h3><p>@Model.ReferenceFertilizerPlan.Warning</p>
+@if(Model.ReferenceFertilizerPlan.Entries.Count==0){<p class="alert alert-warning">Reference quantities are withheld for this assessment. Do not substitute a previous result.</p>}
+else { @foreach(var entry in Model.ReferenceFertilizerPlan.Entries){<p><strong>@entry.Product (@entry.FertilizerGrade): @entry.KgForPlot.ToString("0.00") kg for this plot</strong><br/>@entry.ApplicationTiming · @entry.KgPerHectare kg/ha published reference</p>} }
+<small>REFERENCE ONLY. Quantities are not derived from probe nutrient deficits. DAE means days after emergence, not days after planting. Prior applications are unknown.</small></section>
+<details class="cc-card"><summary>Evidence and limitations</summary>@foreach(var source in Model.EvidenceReferences){<p><strong>@source.Title</strong> · @source.EvidenceClass<br/>@source.Basis
+@if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Source</a>}</p>}
+@foreach(var limitation in Model.Limitations){<p>@limitation</p>}<small>@Model.RulesetVersion · @Model.DatasetVersion</small></details>

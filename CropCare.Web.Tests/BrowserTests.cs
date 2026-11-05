@@ -68,6 +68,15 @@ public sealed class BrowserTests
         await Check("/Zones/Create","add-zone");await page.Locator("[data-cal-step='1']").ClickAsync();
         foreach(var target in new[]{("/Zones/Details/z1","zone"),("/Zones/Details/z2","harvested"),("/Zones/Edit/z1","edit-zone"),("/Sensors?zoneId=z1","sensor-status"),("/Sensors/Details/s1","sensor-details"),("/Sensors/History/s1?metric=nitrogen","history"),("/Sensors/Pair?zoneId=z1","pair"),("/Sensors/Rename/s1","rename"),("/Notifications","notifications"),("/Settings","settings"),("/Settings/Help","help"),("/Profile","account-settings"),("/Profile/Edit","profile-edit"),("/Profile/ChangePassword","change-password"),("/Account/ConfirmLogout","logout"),("/Subscription","subscription"),("/Home/Privacy","privacy")}) await Check(target.Item1,target.Item2);
         await page.GotoAsync(origin+"/Sensors/History/s1"); await page.Locator("#historyDate").FillAsync("2020-01-01"); await page.Locator("#historyDate").DispatchEventAsync("change"); Assert.Equal(0,await page.Locator("[data-history-card]:visible").CountAsync()); Assert.True(await page.GetByRole(AriaRole.Link,new(){Name="Load older readings"}).IsVisibleAsync()); await page.Locator("#clearHistoryDate").ClickAsync(); Assert.Equal(1,await page.Locator("[data-history-card]:visible").CountAsync());
+        factory.Membership="pro";
+        await Check("/Zones/Details/z1","zone-api-pro");
+        await page.GetByRole(AriaRole.Button,new(){Name="View Recommendations",Exact=true}).ClickAsync();
+        await page.Locator("#recommendationProgram").WaitForAsync();
+        Assert.Contains("Rules-based advisory",await page.Locator("#zoneRecommendationContent").InnerTextAsync());
+        await page.Locator("#recommendationProgram").SelectOptionAsync("HYB-2");
+        await page.GetByText("11.80 kg for this plot",new(){Exact=false}).WaitForAsync();
+        await page.ScreenshotAsync(new(){Path=Path.Combine(artifacts,"shared-api-advisory.png"),FullPage=true});
+        await page.Locator("#zoneRecommendationContent .btn-close").ClickAsync();
         await page.SetViewportSizeAsync(390,844);await Check("/Dashboard","dashboard-phone");
         await page.Locator(".cc-nav-toggle").ClickAsync();Assert.Equal("true",await page.Locator(".cc-nav-toggle").GetAttributeAsync("aria-expanded"));await page.Keyboard.PressAsync("Escape");Assert.Equal("false",await page.Locator(".cc-nav-toggle").GetAttributeAsync("aria-expanded"));
         await Check("/Sensors/History/s1","history-phone");await Check("/Zones/Create","add-zone-phone");

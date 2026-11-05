@@ -84,6 +84,19 @@ public sealed class ZoneOverviewService
 
     private async Task PopulateAsync(List<ZoneOverview> zones, string token, CancellationToken ct)
     {
+        using (var assessmentGate = new SemaphoreSlim(3))
+        {
+            await Task.WhenAll(zones.Where(z=>z.IsSubscribed==true).Select(async zone=>{
+                await assessmentGate.WaitAsync(ct);
+                try {
+                    var result = await ReadAsync<ZoneAssessmentDto>("api/zones/"+Uri.EscapeDataString(zone.Zone.ZoneId)+"/assessment",token,ct);
+                    if(result.Supported) zone.Assessment=result; else zone.AssessmentError="API assessment update required";
+                }
+                catch(HttpRequestException){zone.AssessmentError="Assessment unavailable";}
+                catch(System.Text.Json.JsonException){zone.AssessmentError="Unrecognized assessment response";}
+                finally{assessmentGate.Release();}
+            }));
+        }
         var snapshots = zones.SelectMany(z => z.Sensors).ToList();
         if (snapshots.Count > MaxSensorRequests)
         {

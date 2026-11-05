@@ -1,4 +1,4 @@
-﻿
+
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -33,7 +33,7 @@ public sealed class AdvisoriesController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(
         string? zoneId,
-        CancellationToken ct)
+        CancellationToken ct, string programId = "HYB-1")
     {
         var model = new ZoneAssessmentPageModel
         {
@@ -108,7 +108,7 @@ public sealed class AdvisoriesController : Controller
             string path =
                 "api/zones/" +
                 Uri.EscapeDataString(model.SelectedZoneId) +
-                "/assessment/historical-preview";
+                "/assessment/historical-preview?programId=" + Uri.EscapeDataString(programId);
 
             using var request = Authorized(
                 HttpMethod.Get, path, token);
@@ -142,6 +142,7 @@ public sealed class AdvisoriesController : Controller
                     cancellationToken: ct);
 
             model.Assessment = model.Preview?.Assessment;
+            if(model.Assessment?.Supported != true) { model.Assessment=null; model.Error="The API assessment update is required or its response is unavailable."; }
         }
         catch (HttpRequestException)
         {
@@ -172,7 +173,7 @@ public sealed class AdvisoriesController : Controller
         Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Popup(
         string? zoneId,
-        CancellationToken ct)
+        CancellationToken ct, string programId = "HYB-1")
     {
         if (string.IsNullOrWhiteSpace(zoneId) ||
             zoneId.Length > 256 ||
@@ -208,7 +209,7 @@ public sealed class AdvisoriesController : Controller
             string path =
                 "api/zones/" +
                 Uri.EscapeDataString(zoneId) +
-                "/assessment?refresh=true";
+                "/assessment?refresh=true&programId=" + Uri.EscapeDataString(programId);
 
             using var request = Authorized(
                 HttpMethod.Get, path, token);
@@ -237,7 +238,7 @@ public sealed class AdvisoriesController : Controller
                 .ReadFromJsonAsync<ZoneAssessmentDto>(
                     cancellationToken: ct);
 
-            if (assessment == null)
+            if (assessment?.Supported != true)
                 return StatusCode(
                     503, "Assessment is empty.");
 
@@ -290,7 +291,7 @@ public sealed class AdvisoriesController : Controller
 
         return (
             HttpStatusCode.OK,
-            membership?.IsSubscribed == true
+            membership?.VerifiedMembership == true
         );
     }
 

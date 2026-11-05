@@ -1,4 +1,4 @@
-﻿
+
 namespace CropCare.Web.Models;
 
 // ==========================================
@@ -60,6 +60,15 @@ public sealed class ZoneAssessmentDto
         set;
     } = new();
 
+    public List<SensorQualityDto>? SensorQuality { get; set; }
+    public string AssessmentStatus { get; set; } = "";
+    public RecommendationActionDto? PrimaryAction { get; set; }
+    public int ExcludedSensors { get; set; }
+    public bool PartialCoverage { get; set; }
+    public string ProgramId { get; set; } = "HYB-1";
+    public string DatasetVersion { get; set; } = "";
+    public List<EvidenceReferenceDto> EvidenceReferences { get; set; } = new();
+    public bool Supported => SensorQuality is not null && PrimaryAction is not null && !string.IsNullOrWhiteSpace(AssessmentStatus);
     public List<string> SourceIds { get; set; } = new();
 
     public List<string> Limitations { get; set; } = new();
@@ -202,4 +211,21 @@ public sealed class HistoricalPreviewDto
     public string Warning { get; set; } = "";
 
     public ZoneAssessmentDto? Assessment { get; set; }
+}
+
+public sealed class SensorQualityDto
+{
+    public string SensorId {get;set;}="";
+    public string Status {get;set;}="";
+    public bool CanUseForScore {get;set;}
+    public List<string> ReasonCodes {get;set;}=new();
+    public string Message {get;set;}="";
+}
+public sealed class EvidenceReferenceDto
+{
+    public string Id {get;set;}="";
+    public string Title {get;set;}="";
+    public string EvidenceClass {get;set;}="";
+    public string Basis {get;set;}="";
+    public string? Url {get;set;}
 }

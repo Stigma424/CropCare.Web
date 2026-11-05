@@ -1,0 +1,215 @@
+{
+  "zoneId": "DEMO-002",
+  "zoneName": "Synthetic: Low nitrogen indicator",
+  "daysAfterPlanting": 10,
+  "cropStage": "establishment_estimate",
+  "evaluatedAtMs": 1793750400000,
+  "rulesetVersion": "cropcare-hybrid-advisory-v2",
+  "soilHealth": {
+    "score": 88,
+    "label": "Favorable (provisional)",
+    "quality": "prototype_unvalidated",
+    "validSensors": 1,
+    "parameters": [
+      {
+        "parameter": "nitrogen",
+        "value": 7,
+        "unit": "mg/kg",
+        "score": 20,
+        "status": "attention",
+        "ruleId": "CROPCARE_APP_DEMO_NPK"
+      },
+      {
+        "parameter": "phosphorus",
+        "value": 22,
+        "unit": "mg/kg",
+        "score": 100,
+        "status": "within_prototype_band",
+        "ruleId": "CROPCARE_APP_DEMO_NPK"
+      },
+      {
+        "parameter": "potassium",
+        "value": 150,
+        "unit": "mg/kg",
+        "score": 100,
+        "status": "within_prototype_band",
+        "ruleId": "CROPCARE_APP_DEMO_NPK"
+      },
+      {
+        "parameter": "ph",
+        "value": 6.4,
+        "unit": "pH",
+        "score": 100,
+        "status": "within_prototype_band",
+        "ruleId": "CROPCARE_PH_PROTOTYPE"
+      },
+      {
+        "parameter": "moisture",
+        "value": 50,
+        "unit": "%",
+        "score": 100,
+        "status": "within_prototype_band",
+        "ruleId": "CROPCARE_MOISTURE_PROTOTYPE"
+      },
+      {
+        "parameter": "temperature",
+        "value": 29.8,
+        "unit": "°C",
+        "score": 100,
+        "status": "within_prototype_band",
+        "ruleId": "CROPCARE_TEMP_PROTOTYPE"
+      },
+      {
+        "parameter": "ec",
+        "value": 490,
+        "unit": "µS/cm",
+        "score": 100,
+        "status": "within_prototype_band",
+        "ruleId": "CROPCARE_EC_PROTOTYPE"
+      }
+    ]
+  },
+  "sensorAllocation": {
+    "minimum": 1,
+    "suggested": 1,
+    "maximum": 1,
+    "installed": 1,
+    "reportingRecently": 1,
+    "additionalSuggested": 0,
+    "deploymentCompletenessPercent": 100,
+    "placementGuidance": "Select representative subareas by soil, slope and drainage. Density is a planning assumption, not a probe sensing radius."
+  },
+  "recommendations": [
+    {
+      "code": "NUTRIENT_REVIEW",
+      "priority": "medium",
+      "title": "Verify low nutrient indicators",
+      "whatToDo": "Recheck nitrogen and seek soil-test interpretation before deciding fertilizer quantity.",
+      "why": "At least one usable sensor is below an inherited demonstration band. Raw probe mg/kg is not a calibrated crop nutrient requirement.",
+      "sourceId": "CROPCARE_APP_DEMO_NPK",
+      "pushCandidate": false
+    },
+    {
+      "code": "CROP_STAGE",
+      "priority": "info",
+      "title": "Inspect actual crop development",
+      "whatToDo": "Approximately 10 days after planting; verify actual crop development and emergence separately.",
+      "why": "DAP is not days after emergence or an observed biological stage.",
+      "sourceId": "CROPCARE_ZONE_WORKFLOW",
+      "pushCandidate": false
+    }
+  ],
+  "referenceFertilizerPlan": {
+    "crop": "hybrid_corn",
+    "applicability": "REFERENCE_ONLY",
+    "sourceId": "DA_PHILRICE_CORN_TABLE21",
+    "isSiteSpecific": false,
+    "warning": "Published hybrid-corn fertilizer reference programs only. Rates have not been derived from the user's 7-in-1 sensor readings. Confirm applicability, crop stage, and prior applications before any actual fertilizer use. Timing uses days after emergence, not planting. Prior fertilizer applications are unknown; this is not an instruction to apply or reapply.",
+    "entries": [
+      {
+        "product": "Complete Fertilizer",
+        "fertilizerGrade": "14-14-14",
+        "applicationTiming": "Basal application during crop establishment (0 DAE)",
+        "kgPerHectare": 465,
+        "kgForPlot": 18.6
+      },
+      {
+        "product": "Urea",
+        "fertilizerGrade": "46-0-0",
+        "applicationTiming": "Side-dress at 25 days after emergence (25 DAE)",
+        "kgPerHectare": 140,
+        "kgForPlot": 5.6
+      }
+    ]
+  },
+  "sourceIds": [
+    "CROPCARE_APP_DEMO_NPK",
+    "CROPCARE_ZONE_WORKFLOW",
+    "CROPCARE_PH_PROTOTYPE",
+    "CROPCARE_MOISTURE_PROTOTYPE",
+    "CROPCARE_EC_PROTOTYPE",
+    "CROPCARE_TEMP_PROTOTYPE",
+    "DA_PHILRICE_CORN_TABLE21"
+  ],
+  "limitations": [
+    "Prototype weights, quality gates and bands are engineering choices, not agronomically validated sufficiency thresholds.",
+    "No laboratory-calibrated fertilizer dose, crop yield prediction or long-term fertilization-efficiency score is calculated.",
+    "Hardware units and calibration require field verification; sensor checks do not certify accuracy."
+  ],
+  "sensorQuality": [
+    {
+      "sensorId": "DEMO-002-sample",
+      "status": "usable",
+      "canUseForScore": true,
+      "reasonCodes": [],
+      "message": "Passed prototype software checks; sensor accuracy remains unverified."
+    }
+  ],
+  "assessmentStatus": "provisional",
+  "primaryAction": {
+    "code": "NUTRIENT_REVIEW",
+    "priority": "medium",
+    "title": "Verify low nutrient indicators",
+    "whatToDo": "Recheck nitrogen and seek soil-test interpretation before deciding fertilizer quantity.",
+    "why": "At least one usable sensor is below an inherited demonstration band. Raw probe mg/kg is not a calibrated crop nutrient requirement.",
+    "sourceId": "CROPCARE_APP_DEMO_NPK",
+    "pushCandidate": false
+  },
+  "excludedSensors": 0,
+  "partialCoverage": false,
+  "programId": "HYB-1",
+  "datasetVersion": "hybrid-corn-programs-v1",
+  "rulesChecksum": "86c33a3d53f4deb4c055fc1a34934d94ab7afe1eec1ac110ca6991c996bba095",
+  "inputFingerprint": "",
+  "evidenceReferences": [
+    {
+      "id": "CROPCARE_APP_DEMO_NPK",
+      "title": "CROPCARE APP DEMO NPK",
+      "evidenceClass": "engineering_heuristic",
+      "basis": "Explicit CropCare software rule; not an independently calibrated agronomic requirement or proof of sensor accuracy.",
+      "url": "https://docs.google.com/document/d/1kA0A6a3rupP21zv7iIZ6M_yb5ollkG4v6em_32vkhXQ/edit"
+    },
+    {
+      "id": "CROPCARE_ZONE_WORKFLOW",
+      "title": "CROPCARE ZONE WORKFLOW",
+      "evidenceClass": "engineering_heuristic",
+      "basis": "Explicit CropCare software rule; not an independently calibrated agronomic requirement or proof of sensor accuracy.",
+      "url": "https://docs.google.com/document/d/1kA0A6a3rupP21zv7iIZ6M_yb5ollkG4v6em_32vkhXQ/edit"
+    },
+    {
+      "id": "CROPCARE_PH_PROTOTYPE",
+      "title": "Prototype pH indicator bands",
+      "evidenceClass": "engineering_heuristic",
+      "basis": "Uncalibrated prototype concern bands; no amendment dose follows from pH alone.",
+      "url": "https://docs.google.com/document/d/1kA0A6a3rupP21zv7iIZ6M_yb5ollkG4v6em_32vkhXQ/edit"
+    },
+    {
+      "id": "CROPCARE_MOISTURE_PROTOTYPE",
+      "title": "Prototype moisture indicator bands",
+      "evidenceClass": "engineering_heuristic",
+      "basis": "Bands are demonstration choices. Extension guidance supports considering soil texture and calibration, not these universal percentages.",
+      "url": "https://extension.umn.edu/irrigation/soil-moisture-sensors-irrigation-scheduling"
+    },
+    {
+      "id": "CROPCARE_EC_PROTOTYPE",
+      "title": "CROPCARE EC PROTOTYPE",
+      "evidenceClass": "engineering_heuristic",
+      "basis": "Explicit CropCare software rule; not an independently calibrated agronomic requirement or proof of sensor accuracy.",
+      "url": "https://docs.google.com/document/d/1kA0A6a3rupP21zv7iIZ6M_yb5ollkG4v6em_32vkhXQ/edit"
+    },
+    {
+      "id": "CROPCARE_TEMP_PROTOTYPE",
+      "title": "CROPCARE TEMP PROTOTYPE",
+      "evidenceClass": "engineering_heuristic",
+      "basis": "Explicit CropCare software rule; not an independently calibrated agronomic requirement or proof of sensor accuracy.",
+      "url": "https://docs.google.com/document/d/1kA0A6a3rupP21zv7iIZ6M_yb5ollkG4v6em_32vkhXQ/edit"
+    },
+    {
+      "id": "DA_PHILRICE_CORN_TABLE21",
+      "title": "DA-PhilRice Table 21: Hybrid corn reference programs",
+      "evidenceClass": "published_reference",
+      "basis": "Published program arithmetic only; rates are not inferred from current probe values.",
+      "url": "https://www.philrice.gov.ph/wp-content/uploads/2023/03/Book_Mechanized-Dry-Direct-Seeding-using-Multipupose-Seeder-file-for-publishing.pdf"
+    }
+  ]
+}

@@ -49,6 +49,23 @@ public sealed class NotificationsController : Controller
         return View(model);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Feed(CancellationToken ct)
+    {
+        var token=_tokens.GetIdToken(User.FindFirst("CropCareSession")?.Value);
+        if(token is null)return Unauthorized();
+        using var request=Authenticated(HttpMethod.Get,"api/notifications?limit=100",token);
+        try {
+            using var response=await _clients.CreateClient("CropCareApi").SendAsync(request,ct);
+            if(response.StatusCode==HttpStatusCode.Unauthorized)return Unauthorized();
+            if(!response.IsSuccessStatusCode)return StatusCode(503);
+            var rows=await response.Content.ReadFromJsonAsync<List<CropCareNotification>>(cancellationToken:ct);
+            return Json(new {items=rows??new(),scope="latest100"});
+        }
+        catch(HttpRequestException){return StatusCode(503);}
+        catch(System.Text.Json.JsonException){return StatusCode(503);}
+        catch(TaskCanceledException)when(!ct.IsCancellationRequested){return StatusCode(504);}
+    }
     [HttpPost, ValidateAntiForgeryToken]
     public Task<IActionResult> MarkRead(string id, CancellationToken ct) =>
         Change(HttpMethod.Post, id, "read", ct);

@@ -5,10 +5,10 @@
 <aside id="website-navigation" class="cc-sidebar"><a class="cc-brand" asp-controller="Dashboard" asp-action="Index">CropCare</a><p class="cc-tagline">SMART FARMING</p><hr /><nav class="cc-nav" aria-label="Main navigation">
 <a class="@(controller == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">⌂</span>Home</a>
 <a class="@(controller == "Zones" && action == "Create" ? "active" : "")" asp-controller="Zones" asp-action="Create"><span class="cc-nav-icon" aria-hidden="true">+</span>Add Zone</a>
-<a class="@(controller == "Notifications" ? "active" : "")" asp-controller="Notifications" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">◉</span>Notify</a>
+<a class="@(controller == "Notifications" ? "active" : "")" asp-controller="Notifications" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">◉</span>Notify @if(User.Identity?.IsAuthenticated==true){<span data-unread-badge class="badge bg-light text-dark" title="Unread among latest 100">—</span>}</a>
 <a class="@(controller is "Settings" or "Profile" or "Subscription" ? "active" : "")" asp-controller="Settings" asp-action="Index"><span class="cc-nav-icon" aria-hidden="true">⚙</span>Settings</a>
 </nav><div class="cc-sidebar-bottom"><a asp-controller="Home" asp-action="Privacy">Data and privacy</a></div></aside>
 <main id="main-content" class="cc-main"><header class="cc-titlebar"><div><h1>@ViewData["Title"]</h1><p>@(ViewData["Subtitle"] ?? today)</p></div>@await RenderSectionAsync("PageActions", required: false)</header><div class="cc-page">
 @foreach(var key in new[]{"Error","Success","Notice","Message"}) { if (TempData[key] is string message) { <div class="alert @(key == "Error" ? "alert-warning" : "alert-success")" role="status">@message</div> } }
 @RenderBody()</div><footer class="cc-footer">CropCare · IoT-Based Fertilization Monitoring System</footer></main>
-<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script><script src="~/lib/jquery/dist/jquery.min.js"></script><script src="~/js/site.js" asp-append-version="true"></script>@await RenderSectionAsync("Scripts", required:false)</body></html>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script><script src="~/lib/jquery/dist/jquery.min.js"></script><script src="~/js/notification-feed.js" asp-append-version="true"></script><script src="~/js/site.js" asp-append-version="true"></script>@await RenderSectionAsync("Scripts", required:false)</body></html>

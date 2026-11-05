@@ -66,32 +66,10 @@ public sealed class ZoneOverview
             return states.Count == 0 ? "Recorded measurements; freshness unavailable" : string.Join(" · ", states);
         }
     }
-    // The exact five 20-point rules currently used by the Android prototype.
-    // This is NOT a validated soil-health / agronomic score.
-    public int? PrototypeSoilHealth
-    {
-        get
-        {
-            var a = Averages;
-            if (Incomplete || !a.Nitrogen.HasValue || !a.Phosphorus.HasValue ||
-                !a.Potassium.HasValue || !a.Moisture.HasValue || !a.Ph.HasValue)
-                return null;
-            var score = 0;
-            if (a.Nitrogen >= 20) score += 20;
-            if (a.Phosphorus >= 10) score += 20;
-            if (a.Potassium >= 100) score += 20;
-            if (a.Moisture >= 40 && a.Moisture <= 80) score += 20;
-            if (a.Ph >= 5.5 && a.Ph <= 7.5) score += 20;
-            return score;
-        }
-    }
-    public string SoilHealthLabel => PrototypeSoilHealth switch
-    {
-        int n when n >= 80 => "Optimal (prototype)",
-        int n when n >= 40 => "Fair (prototype)",
-        int => "Poor (prototype)",
-        _ => "Pending evaluation"
-    };
+    public ZoneAssessmentDto? Assessment {get;set;}
+    public string? AssessmentError {get;set;}
+    public double? PrototypeSoilHealth => Assessment?.Supported == true ? Assessment.SoilHealth.Score : null;
+    public string SoilHealthLabel => Assessment?.Supported == true ? Assessment.SoilHealth.Label : AssessmentError ?? (IsSubscribed == false ? "Pro assessment required" : "Assessment unavailable");
     public string RecommendationText => Zone.IsHarvested
         ? "Post-harvest zone. Recommendations will be available after validation of the advice engine."
         : IsSubscribed == true

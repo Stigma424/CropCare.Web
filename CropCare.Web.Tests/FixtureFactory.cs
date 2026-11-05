@@ -13,6 +13,7 @@ namespace CropCare.Web.Tests;
 public sealed class FixtureFactory : WebApplicationFactory<Program>
 {
     public string Membership = "free";
+    public bool BadAssessment;
     public bool Malformed;
     public bool Unauthorized;
     public bool ResetConsumed;
@@ -65,7 +66,14 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
             if(path=="/api/onboarding/profile") return f.RegistrationConflict ? Json(new{error="Conflict"},HttpStatusCode.Conflict) : Json(new{userId="owner"},HttpStatusCode.Created);
             if(path=="/api/subscriptions/me") return Json(new{status=f.Membership,isSubscribed=f.Membership=="pro",message="Fixture account state",referenceLastFour="1234"});
             if(path=="/api/subscriptions/request") { f.Membership="pending"; return Json(new{status="pending"},HttpStatusCode.Accepted); }
-            var zone=new {zoneId="z1",zoneName="Test Corn Zone",zoneAreaSqm=1000,dateOfPlanting=1761926400000L,isHarvested=false};
+            if(path.StartsWith("/api/zones/z1/assessment")) {
+                if(f.Membership!="pro")return Json(new{error="Pro required"},HttpStatusCode.Forbidden);
+                if(f.BadAssessment)return Json(new{soilHealth=new{score=100}});
+                var assessment=System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"Fixtures","assessment.json")))!;
+                assessment["zoneId"]="z1";
+                if(request.RequestUri.Query.Contains("HYB-2")){assessment["programId"]="HYB-2";assessment["referenceFertilizerPlan"]!["entries"]![1]!["kgForPlot"]=11.8;}
+                return path.EndsWith("historical-preview")?Json(new{historical=true,snapshotAtMs=1793750400000L,sensorsFound=1,warning="Fixture historical only",assessment}):Json(assessment);
+            }            var zone=new {zoneId="z1",zoneName="Test Corn Zone",zoneAreaSqm=1000,dateOfPlanting=1761926400000L,isHarvested=false};
             var harvested=new {zoneId="z2",zoneName="Harvested Test Zone",zoneAreaSqm=500,dateOfPlanting=1761926400000L,isHarvested=true};
             if(path=="/api/zones") return Json(f.Empty ? Array.Empty<object>() : new object[]{zone,harvested});
             if(path=="/api/zones/z1" && request.Method==HttpMethod.Delete) return Json(new{error="Remove registered sensors before deleting this zone."},HttpStatusCode.Conflict);
@@ -79,7 +87,7 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
             var reading=new{readingId="r1",recordedAtMs=1762185600000L,nitrogen=(double?)0,phosphorus=(double?)30,potassium=(double?)40,moisture=(double?)28,ph=(double?)5.7,temperature=(double?)31,ec=(double?)null};
             if(path=="/api/sensors/s1/monitoring") return Json(new{sensorId="s1",deviceId="TEST_DEVICE",sensorName="Test Soil Sensor",pairingStatus="qr_claimed",status=f.Empty ? "awaiting_first_reading" : "stale",lastReadingAtMs=reading.recordedAtMs,reading=f.Empty ? null : (object)reading});
             if(path=="/api/sensors/s1/readings") return Json(new{sensorId="s1",sensorName="Test Soil Sensor",readings=f.Empty ? Array.Empty<object>() : new object[]{reading},nextCursor=request.RequestUri.Query.Contains("cursor") ? null : "r1"});
-            if(path=="/api/notifications" && request.Method==HttpMethod.Get) return Json(f.Empty ? Array.Empty<object>() : new object[]{new{id="n1",title="Fixture soil alert",message="Test-only notification",timestampMs=1762185600000L,isRead=false,type="soil"}});
+            if(path=="/api/notifications" && request.Method==HttpMethod.Get) return Json(f.Empty ? Array.Empty<object>() : new object[]{new{id="n1",title="Fixture soil alert",message="Test-only notification",timestampMs=1762185600000L,isRead=false,type="soil",zoneId="z1",sensorId="s1"}});
             if(path.StartsWith("/api/notifications")) return Json(new{message="Updated",removed=5000});
             return Json(new{error="Fixture endpoint unavailable"},HttpStatusCode.NotFound);
         }
