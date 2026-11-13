@@ -1,0 +1,10 @@
+@model CropCare.Web.Models.ZoneAssessmentDto
+@{ ViewData["Title"] = Model.ZoneName + " · Recommendation"; }
+<div style="max-width:820px">
+<partial name="_AssessmentContent" model="Model" />
+<details class="cc-advisory-section"><summary>Reference program options</summary><form method="get" asp-action="Current" class="cc-advisory-section-body">
+<input type="hidden" name="zoneId" value="@Model.ZoneId" /><label class="form-label" for="programId">Published program</label>
+<select id="programId" name="programId" class="form-select mb-3"><option value="HYB-1" selected="@(Model.ProgramId=="HYB-1")">HYB-1 · 5–8 t/ha reference</option><option value="HYB-2" selected="@(Model.ProgramId=="HYB-2")">HYB-2 · 8–12 t/ha reference</option></select>
+<button class="btn btn-success" type="submit">Update reference</button></form></details>
+<a class="btn btn-light mt-3" asp-controller="Zones" asp-action="Details" asp-route-id="@Model.ZoneId">Back to zone</a>
+</div>

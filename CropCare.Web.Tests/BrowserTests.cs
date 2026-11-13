@@ -81,7 +81,10 @@ public sealed class BrowserTests
         await page.GetByText("11.80 kg for this plot",new(){Exact=false}).WaitForAsync();
         await page.ScreenshotAsync(new(){Path=Path.Combine(artifacts,"shared-api-advisory.png"),FullPage=true});
         await page.Locator("#zoneRecommendationContent .btn-close").ClickAsync();
+        await Check("/Advisories/Current?zoneId=z1","advice-full-page-desktop");
         await page.SetViewportSizeAsync(390,844);await Check("/Dashboard","dashboard-phone");
+        await Check("/Advisories/Current?zoneId=z1","advice-full-page-phone");
+        await Check("/Dashboard","dashboard-phone-return");
         await page.Locator(".cc-nav-toggle").ClickAsync();Assert.Equal("true",await page.Locator(".cc-nav-toggle").GetAttributeAsync("aria-expanded"));await page.Keyboard.PressAsync("Escape");Assert.Equal("false",await page.Locator(".cc-nav-toggle").GetAttributeAsync("aria-expanded"));
         await Check("/Sensors/History/s1","history-phone");await Check("/Zones/Create","add-zone-phone");
         await page.SetViewportSizeAsync(768,1024);await Check("/Settings","settings-tablet");

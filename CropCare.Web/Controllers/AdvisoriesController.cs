@@ -167,13 +167,17 @@ public sealed class AdvisoriesController : Controller
     // ==========================================
 
     // GET /Advisories/Popup?zoneId=...
+    [HttpGet, ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public Task<IActionResult> Current(string? zoneId, CancellationToken ct, string programId = "HYB-1") =>
+        Popup(zoneId, ct, programId, fullPage: true);
+
     [HttpGet]
     [ResponseCache(
         NoStore = true,
         Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Popup(
         string? zoneId,
-        CancellationToken ct, string programId = "HYB-1")
+        CancellationToken ct, string programId = "HYB-1", bool fullPage = false)
     {
         if (string.IsNullOrWhiteSpace(zoneId) ||
             zoneId.Length > 256 ||
@@ -242,6 +246,7 @@ public sealed class AdvisoriesController : Controller
                 return StatusCode(
                     503, "Assessment is empty.");
 
+            if (fullPage) return View("Current", assessment);
             return PartialView(
                 "_RecommendationPopup",
                 assessment);
