@@ -12,11 +12,13 @@
 @{ var index=0; }
 @foreach(var sensor in Model.SensorQuality ?? new()){ index++; <article class="cc-advisory-check"><h4>Sensor @index · @sensor.Status.Replace('_',' ')</h4><p>@sensor.Message</p><small>Device record: @sensor.SensorId</small><details><summary>Technical details</summary><p>@string.Join(", ",sensor.ReasonCodes)</p></details></article>}
 </div></details>
-<details class="cc-advisory-section"><summary>Fertilizer reference <span>Reference only</span></summary><div class="cc-advisory-section-body"><p>Published program @Model.ProgramId. These amounts are not calculated from your sensor readings.</p>
+<details class="cc-advisory-section"><summary>What to apply and how much</summary><div class="cc-advisory-section-body"><p>Corn program @Model.ProgramId. Quantities are scaled to your zone area; account for fertilizer already applied.</p>
 @if(Model.ReferenceFertilizerPlan.Entries.Count==0){<p class="cc-advisory-warning">Reference quantities are withheld for this assessment. Do not substitute a previous result.</p>}
 else { @foreach(var entry in Model.ReferenceFertilizerPlan.Entries){<article class="cc-advisory-check"><h4>@entry.Product (@entry.FertilizerGrade)</h4><p><strong>@entry.KgForPlot.ToString("0.00") kg for this plot</strong> · @entry.ApplicationTiming</p><small>@entry.KgPerHectare kg/ha published reference</small></article>} }
-<p class="small">@Model.ReferenceFertilizerPlan.Warning</p><p class="small">DAE means days after emergence, not planting. Previous fertilizer applications are unknown. Verify timing before use.</p></div></details>
+<p><strong>How to apply:</strong> Follow the product label and the application timing listed above. Check soil moisture before application and subtract previous applications this cycle.</p><p class="small">DAE means days after emergence, not planting. Previous fertilizer applications are unknown. Verify timing before use.</p></div></details>
 <details class="cc-advisory-section"><summary>Sources and limitations</summary><div class="cc-advisory-section-body">@foreach(var source in Model.EvidenceReferences){<p><strong>@source.Title</strong><br/>@source.Basis
 @if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Read source</a>}</p>}
 @foreach(var limitation in Model.Limitations){<p>@limitation</p>}<small>@Model.RulesetVersion · @Model.DatasetVersion</small></div></details>
 </div>
+
+

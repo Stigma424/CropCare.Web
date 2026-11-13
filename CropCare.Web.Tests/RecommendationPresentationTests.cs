@@ -11,9 +11,10 @@ public sealed class RecommendationPresentationTests
         Assert.Equal(HttpStatusCode.OK,response.StatusCode);
         var html=await response.Content.ReadAsStringAsync();
         Assert.Contains("YOUR NEXT STEP",html); Assert.Contains("Sensor readings and quality",html);
-        Assert.Contains("Fertilizer reference",html); Assert.Contains("Sources and limitations",html);
+        Assert.Contains("What to apply and how much",html); Assert.Contains("Sources and limitations",html);
         Assert.Contains("cc-advisory-section",html); Assert.Contains("Back to zone",html);
         using var other=await client.GetAsync("/Advisories/Current?zoneId=other");
         Assert.Equal(HttpStatusCode.NotFound,other.StatusCode);
     }
 }
+

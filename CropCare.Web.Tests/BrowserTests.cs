@@ -77,7 +77,7 @@ public sealed class BrowserTests
         await page.GetByText("Reference program options",new(){Exact=true}).ClickAsync();
         await page.Locator("#recommendationProgram").SelectOptionAsync("HYB-2");
         await Assertions.Expect(page.Locator("#recommendationProgram")).ToHaveValueAsync("HYB-2");
-        await page.Locator("summary").Filter(new(){HasText="Fertilizer reference"}).ClickAsync();
+        await page.Locator("summary").Filter(new(){HasText="What to apply and how much"}).ClickAsync();
         await page.GetByText("11.80 kg for this plot",new(){Exact=false}).WaitForAsync();
         await page.ScreenshotAsync(new(){Path=Path.Combine(artifacts,"shared-api-advisory.png"),FullPage=true});
         await page.Locator("#zoneRecommendationContent .btn-close").ClickAsync();
@@ -91,3 +91,4 @@ public sealed class BrowserTests
         Assert.Empty(errors);
     }
 }
+
