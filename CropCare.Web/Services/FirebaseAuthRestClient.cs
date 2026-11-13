@@ -18,7 +18,7 @@ public sealed class FirebaseAuthRestClient
     {
         var key = _config["Firebase:WebApiKey"];
         if (string.IsNullOrWhiteSpace(key))
-            throw new InvalidOperationException("Firebase Web API Key is missing from User Secrets.");
+            throw new HttpRequestException("Firebase client authentication is not configured.");
         return $"v1/accounts:{action}?key={Uri.EscapeDataString(key)}";
     }
 

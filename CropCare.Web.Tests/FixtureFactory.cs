@@ -18,6 +18,8 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
     public bool Unauthorized;
     public bool ResetConsumed;
     public bool RecoveryExpired;
+    public bool RecoveryLink;
+    public bool MissingFirebaseKey;
     public bool Empty;
     public bool RegistrationConflict;
     public bool ProfileMissing;
@@ -27,7 +29,7 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.ConfigureLogging(logging => logging.ClearProviders());
         builder.ConfigureAppConfiguration((_,config)=>config.AddInMemoryCollection(new Dictionary<string,string?> {
-            ["CropCareApi:BaseUrl"]="https://fixture-api.test/", ["Firebase:WebApiKey"]="fixture-only-key"
+            ["CropCareApi:BaseUrl"]="https://fixture-api.test/", ["Firebase:WebApiKey"]=MissingFirebaseKey ? "" : "fixture-only-key"
         }));
         builder.ConfigureServices(services=> {
             services.AddHttpClient("CropCareApi").ConfigurePrimaryHttpMessageHandler(()=>new ApiHandler(this));
@@ -55,7 +57,9 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
                     ? Json(new{customToken="fixture-custom-token",userId="owner"}) : Json(new{error="Invalid username or password."},HttpStatusCode.Unauthorized);
             }
             if(path.StartsWith("/api/recovery/")) {
-                if(path.EndsWith("/request")) return Json(new{message="If the account exists, a code will be sent."},HttpStatusCode.Accepted);
+                if(path.EndsWith("/request")) return f.RecoveryLink
+                    ? Json(new{deliveryMode="firebase_link",message="If registered, a reset link will be sent."},HttpStatusCode.Accepted)
+                    : Json(new{message="If the account exists, a code will be sent."},HttpStatusCode.Accepted);
                 if(path.EndsWith("/verify")) return f.RecoveryExpired ? Json(new{error="Invalid or expired code"},HttpStatusCode.BadRequest) : Json(new{resetTicket=new string('A',64)});
                 if(f.ResetConsumed) return Json(new{error="Used ticket"},HttpStatusCode.BadRequest);
                 f.ResetConsumed=true; return Json(new{message="Updated"});

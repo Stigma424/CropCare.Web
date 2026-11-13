@@ -42,6 +42,13 @@ public sealed class RecoveryController : Controller
 
             // TempData uses ASP.NET Core's protected cookie provider by default.
             TempData.Remove("RecoveryTicket");
+            var delivery = await response.Content.ReadFromJsonAsync<RecoveryDeliveryResponse>(cancellationToken: ct);
+            if (delivery?.DeliveryMode == "firebase_link")
+            {
+                TempData.Remove("RecoveryEmail");
+                TempData["RecoveryLinkSent"] = true;
+                return RedirectToAction(nameof(LinkSent));
+            }
             TempData["RecoveryEmail"] = model.Email.Trim();
             TempData["RecoveryMessage"] =
                 "If the account exists, a six-digit code has been sent. Check your email and spam folder.";
@@ -167,5 +174,13 @@ public sealed class RecoveryController : Controller
     }
 
     [HttpGet]
+    public IActionResult LinkSent() => View();
+
+    [HttpGet]
     public IActionResult Complete() => View();
+}
+
+public sealed class RecoveryDeliveryResponse
+{
+    public string? DeliveryMode { get; set; }
 }
