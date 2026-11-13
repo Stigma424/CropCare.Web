@@ -71,9 +71,13 @@ public sealed class BrowserTests
         factory.Membership="pro";
         await Check("/Zones/Details/z1","zone-api-pro");
         await page.GetByRole(AriaRole.Button,new(){Name="View Recommendations",Exact=true}).ClickAsync();
-        await page.Locator("#recommendationProgram").WaitForAsync();
-        Assert.Contains("Rules-based advisory",await page.Locator("#zoneRecommendationContent").InnerTextAsync());
+        await page.Locator(".cc-advisory-hero").WaitForAsync();
+        Assert.Contains("YOUR NEXT STEP",await page.Locator("#zoneRecommendationContent").InnerTextAsync());
+        Assert.False(await page.Locator("#recommendationProgram").IsVisibleAsync());
+        await page.GetByText("Reference program options",new(){Exact=true}).ClickAsync();
         await page.Locator("#recommendationProgram").SelectOptionAsync("HYB-2");
+        await Assertions.Expect(page.Locator("#recommendationProgram")).ToHaveValueAsync("HYB-2");
+        await page.Locator("summary").Filter(new(){HasText="Fertilizer reference"}).ClickAsync();
         await page.GetByText("11.80 kg for this plot",new(){Exact=false}).WaitForAsync();
         await page.ScreenshotAsync(new(){Path=Path.Combine(artifacts,"shared-api-advisory.png"),FullPage=true});
         await page.Locator("#zoneRecommendationContent .btn-close").ClickAsync();

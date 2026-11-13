@@ -1,16 +1,22 @@
 @model CropCare.Web.Models.ZoneAssessmentDto
-<section class="cc-card mb-3" data-assessment-status="@Model.AssessmentStatus">
-<p class="small text-muted">Rules-based advisory · @CropCare.Web.Models.SensorDates.Format(Model.EvaluatedAtMs) · @Model.ProgramId</p>
-<h3 class="h4">@(Model.PrimaryAction?.Title ?? "Assessment unavailable")</h3><p>@Model.PrimaryAction?.WhatToDo</p>
-<p><strong>Provisional score: @(Model.SoilHealth.Score.HasValue ? Model.SoilHealth.Score.Value.ToString("0.#")+"/100" : "Unavailable")</strong> · @Model.SoilHealth.Label</p>
-<p>@Model.SoilHealth.ValidSensors usable / @Model.SensorAllocation.Installed installed · @Model.ExcludedSensors excluded. @(Model.PartialCoverage ? "Partial coverage—this does not describe every part of the zone." : "")</p>
-<details><summary>Reading quality and exclusions</summary>@foreach(var sensor in Model.SensorQuality ?? new()) { <div class="border-top mt-2 pt-2"><strong>@sensor.SensorId — @sensor.Status</strong><p>@sensor.Message</p><small>@string.Join(", ",sensor.ReasonCodes)</small></div> }</details>
+@{ var next = Model.Recommendations.Where(a => a.Code != Model.PrimaryAction?.Code).ToList(); }
+<div class="cc-advisory" data-assessment-status="@Model.AssessmentStatus">
+<section class="cc-advisory-hero" aria-label="Main recommendation">
+<p class="cc-eyebrow">YOUR NEXT STEP</p><h3>@(Model.PrimaryAction?.Title ?? "Waiting for usable readings")</h3><p class="cc-advisory-action">@Model.PrimaryAction?.WhatToDo</p>
+<div class="cc-advisory-stats"><div><span>Soil score</span><strong>@(Model.SoilHealth.Score.HasValue ? Model.SoilHealth.Score.Value.ToString("0.#")+"/100" : "Not ready")</strong><small>@Model.SoilHealth.Label</small></div><div><span>Usable sensors</span><strong>@Model.SoilHealth.ValidSensors / @Model.SensorAllocation.Installed</strong><small>@(Model.ExcludedSensors > 0 ? $"{Model.ExcludedSensors} excluded from advice" : "All installed sensors usable")</small></div></div>
+<p class="cc-advisory-note">Updated @CropCare.Web.Models.SensorDates.Format(Model.EvaluatedAtMs). Rules-based guidance; confirm field conditions before acting.</p>
+@if(Model.PartialCoverage){<p class="cc-advisory-warning">Some readings cannot be used. This assessment does not describe every part of your zone.</p>}
 </section>
-<section class="cc-card mb-3"><h3>Recommended checks</h3>@foreach(var action in Model.Recommendations) {<article class="border-top pt-2 mt-2"><h4 class="h6">@action.Title</h4><p>@action.WhatToDo</p><small>@action.Why · @action.SourceId</small></article>}</section>
-<section class="cc-card mb-3"><h3>Published reference program</h3><p>@Model.ReferenceFertilizerPlan.Warning</p>
-@if(Model.ReferenceFertilizerPlan.Entries.Count==0){<p class="alert alert-warning">Reference quantities are withheld for this assessment. Do not substitute a previous result.</p>}
-else { @foreach(var entry in Model.ReferenceFertilizerPlan.Entries){<p><strong>@entry.Product (@entry.FertilizerGrade): @entry.KgForPlot.ToString("0.00") kg for this plot</strong><br/>@entry.ApplicationTiming · @entry.KgPerHectare kg/ha published reference</p>} }
-<small>REFERENCE ONLY. Quantities are not derived from probe nutrient deficits. DAE means days after emergence, not days after planting. Prior applications are unknown.</small></section>
-<details class="cc-card"><summary>Evidence and limitations</summary>@foreach(var source in Model.EvidenceReferences){<p><strong>@source.Title</strong> · @source.EvidenceClass<br/>@source.Basis
-@if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Source</a>}</p>}
-@foreach(var limitation in Model.Limitations){<p>@limitation</p>}<small>@Model.RulesetVersion · @Model.DatasetVersion</small></details>
+@if(next.Count > 0){<details class="cc-advisory-section"><summary>Other checks <span>@next.Count</span></summary><div class="cc-advisory-section-body">@foreach(var action in next){<article class="cc-advisory-check"><h4>@action.Title</h4><p>@action.WhatToDo</p><details><summary>Why this matters</summary><p>@action.Why</p></details></article>}</div></details>}
+<details class="cc-advisory-section"><summary>Sensor readings and quality <span>@Model.SoilHealth.ValidSensors usable</span></summary><div class="cc-advisory-section-body">
+@{ var index=0; }
+@foreach(var sensor in Model.SensorQuality ?? new()){ index++; <article class="cc-advisory-check"><h4>Sensor @index · @sensor.Status.Replace('_',' ')</h4><p>@sensor.Message</p><small>Device record: @sensor.SensorId</small><details><summary>Technical details</summary><p>@string.Join(", ",sensor.ReasonCodes)</p></details></article>}
+</div></details>
+<details class="cc-advisory-section"><summary>Fertilizer reference <span>Reference only</span></summary><div class="cc-advisory-section-body"><p>Published program @Model.ProgramId. These amounts are not calculated from your sensor readings.</p>
+@if(Model.ReferenceFertilizerPlan.Entries.Count==0){<p class="cc-advisory-warning">Reference quantities are withheld for this assessment. Do not substitute a previous result.</p>}
+else { @foreach(var entry in Model.ReferenceFertilizerPlan.Entries){<article class="cc-advisory-check"><h4>@entry.Product (@entry.FertilizerGrade)</h4><p><strong>@entry.KgForPlot.ToString("0.00") kg for this plot</strong> · @entry.ApplicationTiming</p><small>@entry.KgPerHectare kg/ha published reference</small></article>} }
+<p class="small">@Model.ReferenceFertilizerPlan.Warning</p><p class="small">DAE means days after emergence, not planting. Previous fertilizer applications are unknown. Verify timing before use.</p></div></details>
+<details class="cc-advisory-section"><summary>Sources and limitations</summary><div class="cc-advisory-section-body">@foreach(var source in Model.EvidenceReferences){<p><strong>@source.Title</strong><br/>@source.Basis
+@if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Read source</a>}</p>}
+@foreach(var limitation in Model.Limitations){<p>@limitation</p>}<small>@Model.RulesetVersion · @Model.DatasetVersion</small></div></details>
+</div>

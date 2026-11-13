@@ -1,6 +1,6 @@
 @model CropCare.Web.Models.ZoneAssessmentDto
 <div class="modal-header"><h2 class="modal-title h5">@Model.ZoneName — recommendation</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
 <div class="modal-body">
-<label class="form-label" for="recommendationProgram">Reference program</label><select id="recommendationProgram" class="form-select mb-3" data-assessment-program data-zone-id="@Model.ZoneId"><option value="HYB-1" selected="@(Model.ProgramId=="HYB-1")">HYB-1 · 5–8 t/ha reference</option><option value="HYB-2" selected="@(Model.ProgramId=="HYB-2")">HYB-2 · 8–12 t/ha reference</option></select>
 <partial name="_AssessmentContent" model="Model" />
+<details class="cc-advisory-section"><summary>Reference program options</summary><div class="cc-advisory-section-body"><label class="form-label" for="recommendationProgram">Published hybrid-corn program</label><select id="recommendationProgram" class="form-select" data-assessment-program data-zone-id="@Model.ZoneId"><option value="HYB-1" selected="@(Model.ProgramId=="HYB-1")">HYB-1 · 5–8 t/ha reference</option><option value="HYB-2" selected="@(Model.ProgramId=="HYB-2")">HYB-2 · 8–12 t/ha reference</option></select></div></details>
 </div><div class="modal-footer"><a asp-action="Index" asp-route-zoneId="@Model.ZoneId" asp-route-programId="@Model.ProgramId">Historical preview (Pro)</a><button class="btn btn-success" data-bs-dismiss="modal">Close</button></div>
