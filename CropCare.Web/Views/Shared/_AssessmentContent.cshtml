@@ -46,10 +46,13 @@
 @foreach(var option in new[] { ("HYB-1", "5–8 t/ha"), ("HYB-2", "8–12 t/ha") }){
 <button type="button" class="cc-program-card @(Model.ProgramId == option.Item1 ? "active" : "")" data-assessment-program-card data-zone-id="@Model.ZoneId" data-program-id="@option.Item1" aria-pressed="@(Model.ProgramId == option.Item1 ? "true" : "false")"><strong>@option.Item1</strong><span>@option.Item2</span></button>}
 </div></section>
-<section class="cc-advisory-section cc-action-card"><h4>Sources and limitations</h4>
-@foreach(var source in Model.EvidenceReferences){<article class="cc-advisory-check"><strong>@source.Title</strong><p>@source.Basis</p>
+<section class="cc-advisory-section cc-action-card"><h4>Sources</h4>
+@foreach(var source in Model.EvidenceReferences.Where(s => s.Id is "DA_PHILRICE_CORN_TABLE21" or "CROPCARE_MOISTURE_PROTOTYPE")){
+var fertilizer = source.Id == "DA_PHILRICE_CORN_TABLE21";
+<article class="cc-advisory-check"><strong>@(fertilizer ? "DA-PhilRice · Hybrid corn fertilizer program (Table 21)" : "University of Minnesota Extension · Soil-moisture monitoring")</strong>
+<p>@(fertilizer ? "Published product rates and application timing. Plot quantities are scaled by zone area." : "Guidance on moisture monitoring, soil texture and calibration.")</p>
 @if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Read source</a>}</article>}
-<ul>@foreach(var limitation in Model.Limitations){<li>@limitation</li>}</ul><small>@Model.RulesetVersion · @Model.DatasetVersion</small>
+<p class="small">Reading classifications follow CropCare's configured monitoring bands.</p>
 </section>
 </div>
 </div>

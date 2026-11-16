@@ -13,7 +13,7 @@ public sealed class RecommendationPresentationTests
         Assert.Contains("YOUR NEXT STEP",html); Assert.Contains("Sensor readings and quality",html);
         Assert.Contains("What to apply",html); Assert.Contains("How to apply",html);
         Assert.Contains("When to apply",html); Assert.Contains("How much to apply",html);
-        Assert.Contains("View more details",html); Assert.Contains("Sources and limitations",html);
+        Assert.Contains("View more details",html); Assert.Contains("<h4>Sources</h4>",html);
         Assert.DoesNotContain("<details",html); Assert.DoesNotContain("provisional",html,StringComparison.OrdinalIgnoreCase);
         Assert.Contains("cc-advisory-section",html); Assert.Contains("Back to zone",html);
         using var other=await client.GetAsync("/Advisories/Current?zoneId=other");
