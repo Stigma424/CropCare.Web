@@ -61,6 +61,8 @@ public sealed class ZoneAssessmentDto
     } = new();
 
     public List<SensorQualityDto>? SensorQuality { get; set; }
+    public FertilizerReferenceDto? ProgramFertilizerPlan { get; set; }
+    public FertilizerReferenceDto DisplayPlan => ProgramFertilizerPlan ?? ReferenceFertilizerPlan;
     public string AssessmentStatus { get; set; } = "";
     public RecommendationActionDto? PrimaryAction { get; set; }
     public int ExcludedSensors { get; set; }

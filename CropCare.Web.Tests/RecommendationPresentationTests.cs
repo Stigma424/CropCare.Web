@@ -29,10 +29,13 @@ public sealed class RecommendationPresentationTests
         var summary = new CropCare.Web.Models.RecommendationSummary(assessment);
         Assert.True(summary.CanReviewApplication); Assert.Contains("5.60 kg", summary.Amount);
         assessment.Recommendations.Add(new() { Code = "HIGH_MOISTURE" });
-        Assert.False(summary.CanReviewApplication); Assert.Contains("Hold", summary.What);
-        Assert.DoesNotContain("5.60", summary.Amount);
+        Assert.False(summary.CanReviewApplication); Assert.Contains("Before applying", summary.ApplicationNote);
+        Assert.Contains("5.60", summary.Amount);
         assessment.Recommendations.Clear();
         Assert.False(summary.CanReviewApplication);
+        Assert.Contains("5.60", summary.Amount);
+        assessment.ReferenceFertilizerPlan.Entries.Clear();
+        Assert.DoesNotContain("5.60", summary.Amount);
     }
 }
 
