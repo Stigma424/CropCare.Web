@@ -21,5 +21,13 @@
     }
     modal.addEventListener('show.bs.modal',event=>load(event.relatedTarget?.getAttribute('data-recommendation-url')));
     modal.addEventListener('change',event=>{const target=event.target;if(target.matches('[data-assessment-program]'))load('/Advisories/Popup?zoneId='+encodeURIComponent(target.dataset.zoneId)+'&programId='+encodeURIComponent(target.value));});
+    modal.addEventListener('click',async event=>{
+        const target=event.target.closest('[data-assessment-program-card]');
+        if(!target || target.getAttribute('aria-pressed')==='true')return;
+        event.stopPropagation();
+        await load('/Advisories/Popup?zoneId='+encodeURIComponent(target.dataset.zoneId)+'&programId='+encodeURIComponent(target.dataset.programId));
+        const toggle=content.querySelector('[data-advice-toggle]');
+        if(toggle){const details=document.getElementById(toggle.getAttribute('aria-controls'));if(details){details.hidden=false;toggle.setAttribute('aria-expanded','true');toggle.textContent='Show summary';}}
+    });
 })();
 </script>

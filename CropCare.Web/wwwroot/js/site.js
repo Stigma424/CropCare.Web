@@ -1,5 +1,22 @@
 (() => {
     'use strict';
+    document.addEventListener('click', event => {
+        const toggle = event.target.closest('[data-advice-toggle]');
+        if (toggle) {
+            const details = document.getElementById(toggle.getAttribute('aria-controls'));
+            if (!details) return;
+            details.hidden = !details.hidden;
+            toggle.setAttribute('aria-expanded', String(!details.hidden));
+            toggle.textContent = details.hidden ? 'View more details' : 'Show summary';
+        }
+        const program = event.target.closest('[data-assessment-program-card]');
+        if (program && !program.closest('#zoneRecommendationModal')) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('zoneId', program.dataset.zoneId);
+            url.searchParams.set('programId', program.dataset.programId);
+            window.location.assign(url);
+        }
+    });
     document.querySelectorAll('[data-password-toggle]').forEach(button => {
         button.addEventListener('click', () => {
             const input = document.getElementById(button.dataset.passwordToggle);

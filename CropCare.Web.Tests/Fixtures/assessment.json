@@ -7,7 +7,7 @@
   "rulesetVersion": "cropcare-hybrid-advisory-v2",
   "soilHealth": {
     "score": 88,
-    "label": "Favorable (provisional)",
+    "label": "Favorable",
     "quality": "prototype_unvalidated",
     "validSensors": 1,
     "parameters": [
@@ -145,7 +145,7 @@
       "message": "Passed prototype software checks; sensor accuracy remains unverified."
     }
   ],
-  "assessmentStatus": "provisional",
+  "assessmentStatus": "assessed",
   "primaryAction": {
     "code": "NUTRIENT_REVIEW",
     "priority": "medium",

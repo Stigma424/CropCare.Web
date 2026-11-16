@@ -1,24 +1,54 @@
 @model CropCare.Web.Models.ZoneAssessmentDto
-@{ var next = Model.Recommendations.Where(a => a.Code != Model.PrimaryAction?.Code).ToList(); }
+@{
+    var summary = new CropCare.Web.Models.RecommendationSummary(Model);
+    var detailsId = "advice-" + Guid.NewGuid().ToString("N");
+}
 <div class="cc-advisory" data-assessment-status="@Model.AssessmentStatus">
-<section class="cc-advisory-hero" aria-label="Main recommendation">
-<p class="cc-eyebrow">YOUR NEXT STEP</p><h3>@(Model.PrimaryAction?.Title ?? "Waiting for usable readings")</h3><p class="cc-advisory-action">@Model.PrimaryAction?.WhatToDo</p>
-<div class="cc-advisory-stats"><div><span>Soil score</span><strong>@(Model.SoilHealth.Score.HasValue ? Model.SoilHealth.Score.Value.ToString("0.#")+"/100" : "Not ready")</strong><small>@Model.SoilHealth.Label</small></div><div><span>Usable sensors</span><strong>@Model.SoilHealth.ValidSensors / @Model.SensorAllocation.Installed</strong><small>@(Model.ExcludedSensors > 0 ? $"{Model.ExcludedSensors} excluded from advice" : "All installed sensors usable")</small></div></div>
-<p class="cc-advisory-note">Updated @CropCare.Web.Models.SensorDates.Format(Model.EvaluatedAtMs). Rules-based guidance; confirm field conditions before acting.</p>
-@if(Model.PartialCoverage){<p class="cc-advisory-warning">Some readings cannot be used. This assessment does not describe every part of your zone.</p>}
+<section class="cc-advisory-hero" aria-label="Recommendation summary">
+<p class="cc-eyebrow">YOUR NEXT STEP</p>
+<h3>@(Model.PrimaryAction?.Title ?? "Waiting for usable readings")</h3>
+<p class="cc-advisory-action">@Model.PrimaryAction?.WhatToDo</p>
+<p class="cc-advisory-note">Updated @CropCare.Web.Models.SensorDates.Format(Model.EvaluatedAtMs) · Corn program @Model.ProgramId</p>
 </section>
-@if(next.Count > 0){<details class="cc-advisory-section"><summary>Other checks <span>@next.Count</span></summary><div class="cc-advisory-section-body">@foreach(var action in next){<article class="cc-advisory-check"><h4>@action.Title</h4><p>@action.WhatToDo</p><details><summary>Why this matters</summary><p>@action.Why</p></details></article>}</div></details>}
-<details class="cc-advisory-section"><summary>Sensor readings and quality <span>@Model.SoilHealth.ValidSensors usable</span></summary><div class="cc-advisory-section-body">
-@{ var index=0; }
-@foreach(var sensor in Model.SensorQuality ?? new()){ index++; <article class="cc-advisory-check"><h4>Sensor @index · @sensor.Status.Replace('_',' ')</h4><p>@sensor.Message</p><small>Device record: @sensor.SensorId</small><details><summary>Technical details</summary><p>@string.Join(", ",sensor.ReasonCodes)</p></details></article>}
-</div></details>
-<details class="cc-advisory-section"><summary>What to apply and how much</summary><div class="cc-advisory-section-body"><p>Corn program @Model.ProgramId. Quantities are scaled to your zone area; account for fertilizer already applied.</p>
-@if(Model.ReferenceFertilizerPlan.Entries.Count==0){<p class="cc-advisory-warning">Reference quantities are withheld for this assessment. Do not substitute a previous result.</p>}
-else { @foreach(var entry in Model.ReferenceFertilizerPlan.Entries){<article class="cc-advisory-check"><h4>@entry.Product (@entry.FertilizerGrade)</h4><p><strong>@entry.KgForPlot.ToString("0.00") kg for this plot</strong> · @entry.ApplicationTiming</p><small>@entry.KgPerHectare kg/ha published reference</small></article>} }
-<p><strong>How to apply:</strong> Follow the product label and the application timing listed above. Check soil moisture before application and subtract previous applications this cycle.</p><p class="small">DAE means days after emergence, not planting. Previous fertilizer applications are unknown. Verify timing before use.</p></div></details>
-<details class="cc-advisory-section"><summary>Sources and limitations</summary><div class="cc-advisory-section-body">@foreach(var source in Model.EvidenceReferences){<p><strong>@source.Title</strong><br/>@source.Basis
-@if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Read source</a>}</p>}
-@foreach(var limitation in Model.Limitations){<p>@limitation</p>}<small>@Model.RulesetVersion · @Model.DatasetVersion</small></div></details>
+<div class="cc-application-grid">
+@foreach (var item in new[] { ("What to apply", summary.What), ("How to apply", summary.How), ("When to apply", summary.When), ("How much to apply", summary.Amount) })
+{
+    <article class="cc-advisory-section cc-action-card @(summary.CanReviewApplication ? "cc-tone-good" : "cc-tone-check")">
+    <h4>@item.Item1</h4><ul><li>@item.Item2</li></ul></article>
+}
 </div>
-
-
+@if(Model.PartialCoverage){<p class="cc-advisory-warning">Partial coverage: some readings are excluded. This assessment does not describe every part of your zone.</p>}
+<button type="button" class="btn btn-success cc-more-details" data-advice-toggle aria-expanded="false" aria-controls="@detailsId">View more details</button>
+<div id="@detailsId" data-advice-details hidden>
+<section class="cc-advisory-section cc-action-card">
+<h4>Full application plan</h4>
+<p>Published corn program @Model.ProgramId. Quantities are scaled to your zone area; they are not a measured soil-deficit dose. Complete field and crop-stage checks before application.</p>
+@if(Model.ReferenceFertilizerPlan.Entries.Count==0){<p class="cc-advisory-warning">No quantities available for this assessment. Do not reuse an earlier result.</p>}
+@foreach(var entry in Model.ReferenceFertilizerPlan.Entries){
+<article class="cc-advisory-check"><h4>@entry.Product (@entry.FertilizerGrade)</h4><ul><li><strong>@entry.KgForPlot.ToString("0.00") kg for this plot</strong></li><li>When: @entry.ApplicationTiming</li><li>@entry.KgPerHectare kg/ha published program basis</li></ul></article>}
+<ul><li>Follow each product label and check root-zone moisture.</li><li>Account for fertilizer already applied this cycle.</li><li>DAE means days after emergence, not planting. Confirm actual crop stage.</li></ul>
+</section>
+<section class="cc-advisory-section cc-action-card cc-tone-check"><h4>What needs checking</h4>
+@foreach(var action in Model.Recommendations){<article class="cc-advisory-check"><h4>@action.Title</h4><ul><li>@action.WhatToDo</li><li>Why: @action.Why</li></ul></article>}
+</section>
+<section class="cc-advisory-section cc-action-card"><h4>Soil health score</h4>
+<div class="cc-advisory-stats"><div><strong>@(Model.SoilHealth.Score.HasValue ? Model.SoilHealth.Score.Value.ToString("0.#")+"/100" : "Not available")</strong><small>@Model.SoilHealth.Label</small></div><div><span>Usable sensors</span><strong>@Model.SoilHealth.ValidSensors / @Model.SensorAllocation.Installed</strong><small>@Model.ExcludedSensors excluded from advice</small></div></div>
+<p class="small">Sensor-based condition score. Laboratory testing provides a fuller soil assessment.</p></section>
+<section class="cc-advisory-section cc-action-card"><h4>Sensor readings and quality</h4>
+@{ var index=0; }
+@foreach(var sensor in Model.SensorQuality ?? new()){ index++;
+<article class="cc-advisory-check @(sensor.CanUseForScore ? "cc-tone-good" : "cc-tone-alert")"><h4>Sensor @index · @(sensor.CanUseForScore ? "USABLE" : "CHECK REQUIRED")</h4><ul><li>@sensor.Message</li><li>Status: @sensor.Status.Replace('_',' ')</li><li>Device record: @sensor.SensorId</li></ul></article>}
+</section>
+<section class="cc-advisory-section cc-action-card"><h4>Corn program options</h4>
+<p class="small">Choose a published hybrid-corn yield target that matches your plan. This is a target, not a predicted yield.</p>
+<div class="cc-program-cards">
+@foreach(var option in new[] { ("HYB-1", "5–8 t/ha"), ("HYB-2", "8–12 t/ha") }){
+<button type="button" class="cc-program-card @(Model.ProgramId == option.Item1 ? "active" : "")" data-assessment-program-card data-zone-id="@Model.ZoneId" data-program-id="@option.Item1" aria-pressed="@(Model.ProgramId == option.Item1 ? "true" : "false")"><strong>@option.Item1</strong><span>@option.Item2</span></button>}
+</div></section>
+<section class="cc-advisory-section cc-action-card"><h4>Sources and limitations</h4>
+@foreach(var source in Model.EvidenceReferences){<article class="cc-advisory-check"><strong>@source.Title</strong><p>@source.Basis</p>
+@if(Uri.TryCreate(source.Url,UriKind.Absolute,out var url) && url.Scheme=="https"){<a href="@url" target="_blank" rel="noopener noreferrer">Read source</a>}</article>}
+<ul>@foreach(var limitation in Model.Limitations){<li>@limitation</li>}</ul><small>@Model.RulesetVersion · @Model.DatasetVersion</small>
+</section>
+</div>
+</div>
