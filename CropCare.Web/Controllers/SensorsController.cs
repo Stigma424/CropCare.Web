@@ -94,10 +94,22 @@ public sealed class SensorsController : Controller
             if (!zoneResponse.IsSuccessStatusCode) return Unavailable();
             var zone = await zoneResponse.Content.ReadFromJsonAsync<ZoneRecord>(cancellationToken: ct);
             if (zone == null) return NotFound();
+            if (manage)
+            {
+                using var listRequest = ApiRequest(HttpMethod.Get, "api/sensors");
+                using var listResponse = await _clients.CreateClient("CropCareApi").SendAsync(listRequest, ct);
+                if (listResponse.StatusCode == HttpStatusCode.Unauthorized) return await LoginAgain();
+                if (!listResponse.IsSuccessStatusCode)
+                {
+                    TempData["Error"] = await ApiError(listResponse, "Could not load registered devices.", ct);
+                    return RedirectToAction("Details", "Zones", new { id = zoneId });
+                }
+                var sensors = await listResponse.Content.ReadFromJsonAsync<List<SensorRecord>>(cancellationToken: ct) ?? new();
+                return View("Manage", new DeviceManagementViewModel(zone, await LoadZones(ct), sensors));
+            }
             var token = _tokens.GetIdToken(User.FindFirst("CropCareSession")?.Value)!;
             var vm = await _overview.GetZoneOverviewAsync(zone, token, ct);
-            if (manage) ViewBag.Zones = await LoadZones(ct);
-            return View(manage ? "Manage" : "Index", vm);
+            return View("Index", vm);
         }
         catch (UnauthorizedAccessException) { return await LoginAgain(); }
         catch (HttpRequestException) { return Unavailable(); }
@@ -145,18 +157,12 @@ public sealed class SensorsController : Controller
             if (!zoneResponse.IsSuccessStatusCode) return NotFound();
 
             using var listRequest = ApiRequest(HttpMethod.Get,
-                "api/sensors?zoneId=" + Uri.EscapeDataString(zoneId));
+                "api/sensors");
             using var listResponse = await client.SendAsync(listRequest, ct);
             if (listResponse.StatusCode == HttpStatusCode.Unauthorized) return await LoginAgain();
             if (!listResponse.IsSuccessStatusCode) return Unavailable();
             var sensors = await listResponse.Content.ReadFromJsonAsync<List<SensorRecord>>(cancellationToken: ct)
                           ?? new List<SensorRecord>();
-            sensors = sensors.Where(s => s.ZoneId == zoneId).ToList();
-            if (sensors.Count > 50)
-            {
-                TempData["Error"] = "More than 50 devices are registered. Remove sensors individually.";
-                return RedirectToAction(nameof(Manage), new { zoneId });
-            }
             var removed = 0;
             foreach (var sensor in sensors)
             {

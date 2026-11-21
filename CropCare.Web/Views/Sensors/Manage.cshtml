@@ -1,26 +1,19 @@
-@model CropCare.Web.Models.ZoneOverview
+@model CropCare.Web.Models.DeviceManagementViewModel
 @using CropCare.Web.Models
 @{
     ViewData["Title"] = "Device Management";
-    var zones = (IEnumerable<ZoneRecord>)ViewBag.Zones;
+    var zones = Model.Zones;
     var zoneId = Model.Zone.ZoneId;
 }
 <div class="cc-section-heading">
-    <h2>@Model.Zone.ZoneName</h2>
+    <h2>Registered devices</h2>
     <a class="btn btn-success" asp-action="Pair" asp-route-zoneId="@zoneId">Pair sensor</a>
 </div>
-<nav class="cc-actions" aria-label="Farm zones">
-@foreach (var zone in zones)
-{
-    <a class="btn @(zone.ZoneId == zoneId ? "btn-success" : "btn-light")" asp-action="Manage" asp-route-zoneId="@zone.ZoneId">@zone.ZoneName</a>
-}
-</nav>
-@if (Model.Error is string error) { <p class="alert alert-warning">@error</p> }
-@if (Model.Sensors.Count == 0) { <p class="cc-empty">No sensors registered to this zone.</p> }
+@if (Model.Sensors.Count == 0) { <p class="cc-empty">No sensors registered.</p> }
 <div class="cc-grid">
-@foreach (var snapshot in Model.Sensors)
+@foreach (var sensor in Model.Sensors)
 {
-    var sensor = snapshot.Sensor;
+
     <article class="cc-card">
         <h3>@sensor.SensorName</h3>
         <p>Device ID @sensor.DeviceId · @(sensor.PairingStatus == "qr_claimed" ? "QR paired" : "Unverified registration")</p>
@@ -29,7 +22,7 @@
                 <select name="destinationZoneId" class="form-select">
                 @foreach (var zone in zones)
                 {
-                    <option value="@zone.ZoneId" selected="@(zone.ZoneId == zoneId)">@zone.ZoneName</option>
+                    <option value="@zone.ZoneId" selected="@(zone.ZoneId == sensor.ZoneId)">@zone.ZoneName</option>
                 }
                 </select>
             </label>
@@ -48,10 +41,10 @@
 @if (Model.Sensors.Count > 0)
 {
     <form class="cc-card mt-3" asp-action="DeleteAll" asp-route-zoneId="@zoneId" method="post">
-        <label class="form-label">Type DELETE to confirm unpairing all sensors in this zone.
+        <label class="form-label">Type DELETE to confirm unpairing all sensors registered to your account.
             <input class="form-control" name="confirmation" required />
         </label>
-        <button class="btn btn-danger" type="submit">Delete all in this zone</button>
+        <button class="btn btn-danger" type="submit">Delete all sensors</button>
     </form>
 }
 <a class="cc-back-link" asp-controller="Zones" asp-action="Details" asp-route-id="@zoneId">Back to Zone</a>
