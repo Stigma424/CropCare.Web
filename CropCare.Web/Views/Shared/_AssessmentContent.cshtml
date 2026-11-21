@@ -1,5 +1,6 @@
 @model CropCare.Web.Models.ZoneAssessmentDto
 @{
+    var sensorId = ViewData["RecommendationSensorId"] as string;
     var summary = new CropCare.Web.Models.RecommendationSummary(Model);
     var detailsId = "advice-" + Guid.NewGuid().ToString("N");
 }
@@ -23,7 +24,7 @@
 <div id="@detailsId" data-advice-details hidden>
 <section class="cc-advisory-section cc-action-card">
 <h4>Full application plan</h4>
-<p>Published corn program @Model.ProgramId. Quantities are scaled to your zone area; they are not a measured soil-deficit dose. Complete field and crop-stage checks before application.</p>
+<p>Published corn program @Model.ProgramId. Reference quantities are scaled to @(sensorId is null ? "your zone area" : $"{Model.SensorAssignedAreaSqm:0.##} m² assigned to this sensor"). Confirm crop stage and account for previous applications.</p>
 @if(Model.DisplayPlan.Entries.Count==0){<p class="cc-advisory-warning">No quantities available for this crop cycle. Complete the current zone setup.</p>}
 @foreach(var entry in Model.DisplayPlan.Entries){
 <article class="cc-advisory-check"><h4>@entry.Product (@entry.FertilizerGrade)</h4><ul><li><strong>@entry.KgForPlot.ToString("0.00") kg for this plot</strong></li><li>When: @entry.ApplicationTiming</li><li>@entry.KgPerHectare kg/ha published program basis</li></ul></article>}
@@ -44,7 +45,16 @@
 <p class="small">Choose a published hybrid-corn yield target that matches your plan. This is a target, not a predicted yield.</p>
 <div class="cc-program-cards">
 @foreach(var option in new[] { ("HYB-1", "5–8 t/ha"), ("HYB-2", "8–12 t/ha") }){
-<button type="button" class="cc-program-card @(Model.ProgramId == option.Item1 ? "active" : "")" data-assessment-program-card data-zone-id="@Model.ZoneId" data-program-id="@option.Item1" aria-pressed="@(Model.ProgramId == option.Item1 ? "true" : "false")"><strong>@option.Item1</strong><span>@option.Item2</span></button>}
+@if (sensorId is null)
+{
+<button type="button" class="cc-program-card @(Model.ProgramId == option.Item1 ? "active" : "")" data-assessment-program-card data-zone-id="@Model.ZoneId" data-program-id="@option.Item1" aria-pressed="@(Model.ProgramId == option.Item1 ? "true" : "false")"><strong>@option.Item1</strong><span>@option.Item2</span></button>
+}
+else
+{
+<a class="cc-program-card @(Model.ProgramId == option.Item1 ? "active" : "")" asp-controller="Sensors" asp-action="Details"
+   asp-route-id="@sensorId" asp-route-programId="@option.Item1" asp-fragment="sensor-advice"
+   aria-current="@(Model.ProgramId == option.Item1 ? "true" : null)"><strong>@option.Item1</strong><span>@option.Item2</span></a>
+}}
 </div></section>
 <section class="cc-advisory-section cc-action-card"><h4>Sources</h4>
 @foreach(var source in Model.EvidenceReferences.Where(s => s.Id is "DA_PHILRICE_CORN_TABLE21" or "CROPCARE_MOISTURE_PROTOTYPE")){

@@ -74,14 +74,8 @@ public sealed class SensorsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // Zone-scoped sensor management, matching the Android flow.
     [HttpGet]
-    public Task<IActionResult> Index(string? zoneId, CancellationToken ct) => ListPage(zoneId, false, ct);
-
-    [HttpGet]
-    public Task<IActionResult> Manage(string? zoneId, CancellationToken ct) => ListPage(zoneId, true, ct);
-
-    private async Task<IActionResult> ListPage(string? zoneId, bool manage, CancellationToken ct)
+    public async Task<IActionResult> Index(string? zoneId, CancellationToken ct)
     {
         if (!ValidId(zoneId)) return RedirectToAction("Index", "Zones");
         try
@@ -94,19 +88,6 @@ public sealed class SensorsController : Controller
             if (!zoneResponse.IsSuccessStatusCode) return Unavailable();
             var zone = await zoneResponse.Content.ReadFromJsonAsync<ZoneRecord>(cancellationToken: ct);
             if (zone == null) return NotFound();
-            if (manage)
-            {
-                using var listRequest = ApiRequest(HttpMethod.Get, "api/sensors");
-                using var listResponse = await _clients.CreateClient("CropCareApi").SendAsync(listRequest, ct);
-                if (listResponse.StatusCode == HttpStatusCode.Unauthorized) return await LoginAgain();
-                if (!listResponse.IsSuccessStatusCode)
-                {
-                    TempData["Error"] = await ApiError(listResponse, "Could not load registered devices.", ct);
-                    return RedirectToAction("Details", "Zones", new { id = zoneId });
-                }
-                var sensors = await listResponse.Content.ReadFromJsonAsync<List<SensorRecord>>(cancellationToken: ct) ?? new();
-                return View("Manage", new DeviceManagementViewModel(zone, await LoadZones(ct), sensors));
-            }
             var token = _tokens.GetIdToken(User.FindFirst("CropCareSession")?.Value)!;
             var vm = await _overview.GetZoneOverviewAsync(zone, token, ct);
             return View("Index", vm);
@@ -116,9 +97,36 @@ public sealed class SensorsController : Controller
         catch (TaskCanceledException) when (!ct.IsCancellationRequested) { return Unavailable(); }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Manage(CancellationToken ct)
+    {
+        try
+        {
+            using var request = ApiRequest(HttpMethod.Get, "api/sensors");
+            using var response = await _clients.CreateClient("CropCareApi").SendAsync(request, ct);
+            if (response.StatusCode == HttpStatusCode.Unauthorized) return await LoginAgain();
+            if (!response.IsSuccessStatusCode)
+            {
+                TempData["Error"] = await ApiError(response, "Could not load registered devices.", ct);
+                return RedirectToAction("Index", "Dashboard");
+            }
+            var sensors = await response.Content.ReadFromJsonAsync<List<SensorRecord>>(cancellationToken: ct) ?? new();
+            return View(new DeviceManagementViewModel(await LoadZones(ct), sensors));
+        }
+        catch (UnauthorizedAccessException) { return await LoginAgain(); }
+        catch (HttpRequestException) { return ManagementUnavailable(); }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested) { return ManagementUnavailable(); }
+    }
+
+    private IActionResult ManagementUnavailable()
+    {
+        TempData["Error"] = "The CropCare API is unavailable. Please try again.";
+        return RedirectToAction("Index", "Dashboard");
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Assign(string id, string zoneId, string destinationZoneId, CancellationToken ct)
+    public async Task<IActionResult> Assign(string id, string destinationZoneId, CancellationToken ct)
     {
         if (!ValidId(id) || !ValidId(destinationZoneId)) return BadRequest();
         try
@@ -132,30 +140,23 @@ public sealed class SensorsController : Controller
         catch (UnauthorizedAccessException) { return await LoginAgain(); }
         catch (HttpRequestException) { TempData["Error"] = "CropCare API is unavailable."; }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested) { TempData["Error"] = "Zone update timed out."; }
-        return RedirectToAction(nameof(Manage), new { zoneId });
+        return RedirectToAction(nameof(Manage));
     }
 
     // Removes registrations one by one through the EXISTING API.
     // Never bulk-delete with a GET or without explicit confirmation.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteAll(string zoneId, string confirmation, CancellationToken ct)
+    public async Task<IActionResult> DeleteAll(string confirmation, CancellationToken ct)
     {
-        if (!ValidId(zoneId)) return BadRequest("Invalid zone ID.");
         if (confirmation != "DELETE")
         {
             TempData["Error"] = "Type DELETE to confirm bulk removal.";
-            return RedirectToAction(nameof(Manage), new { zoneId });
+            return RedirectToAction(nameof(Manage));
         }
         try
         {
             var client = _clients.CreateClient("CropCareApi");
-            using var zoneRequest = ApiRequest(HttpMethod.Get,
-                "api/zones/" + Uri.EscapeDataString(zoneId));
-            using var zoneResponse = await client.SendAsync(zoneRequest, ct);
-            if (zoneResponse.StatusCode == HttpStatusCode.Unauthorized) return await LoginAgain();
-            if (!zoneResponse.IsSuccessStatusCode) return NotFound();
-
             using var listRequest = ApiRequest(HttpMethod.Get,
                 "api/sensors");
             using var listResponse = await client.SendAsync(listRequest, ct);
@@ -176,7 +177,7 @@ public sealed class SensorsController : Controller
                 TempData["Success"] = $"Removed {removed} sensor registration(s). Authorized linked QR claims were released; original QR labels can be reused.";
             else
                 TempData["Error"] = $"Only {removed} of {sensors.Count} sensors were removed. Please review the remainder.";
-            return RedirectToAction(nameof(Manage), new { zoneId });
+            return RedirectToAction(nameof(Manage));
         }
         catch (UnauthorizedAccessException) { return await LoginAgain(); }
         catch (HttpRequestException) { return Unavailable(); }
@@ -234,12 +235,8 @@ public sealed class SensorsController : Controller
                     "Pairing was rejected by the CropCare API.", ct));
                 return View(model);
             }
-            var created = await response.Content.ReadFromJsonAsync<SensorRecord>(
-                cancellationToken: ct);
             TempData["Success"] = "QR pairing completed. Waiting for verified device readings.";
-            return created != null && ValidId(created.SensorId)
-                ? RedirectToAction(nameof(Manage), new { zoneId = model.ZoneId })
-                : RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Manage));
         }
         catch (UnauthorizedAccessException) { return await LoginAgain(); }
         catch (HttpRequestException)
@@ -372,7 +369,7 @@ public sealed class SensorsController : Controller
     // POST /Sensors/Rename/{id}
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Rename(string id, RenameSensorViewModel model, CancellationToken ct, string? zoneId = null)
+    public async Task<IActionResult> Rename(string id, RenameSensorViewModel model, CancellationToken ct)
     {
         if (!ValidId(id)) return BadRequest("Invalid sensor ID.");
         model.SensorId = id;
@@ -390,7 +387,7 @@ public sealed class SensorsController : Controller
                 return View(model);
             }
             TempData["Success"] = "Sensor name updated.";
-            return RedirectToAction(nameof(Manage), new { zoneId });
+            return RedirectToAction(nameof(Manage));
         }
         catch (UnauthorizedAccessException) { return await LoginAgain(); }
         catch (HttpRequestException) { ModelState.AddModelError("", "Cannot reach CropCare API."); }
@@ -402,7 +399,7 @@ public sealed class SensorsController : Controller
     // POST /Sensors/Delete/{id} — existing API preserves claim consumption.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(string id, CancellationToken ct, string? zoneId = null)
+    public async Task<IActionResult> Delete(string id, CancellationToken ct)
     {
         if (!ValidId(id)) return BadRequest("Invalid sensor ID.");
         try
@@ -420,13 +417,13 @@ public sealed class SensorsController : Controller
             if (!response.IsSuccessStatusCode)
             {
                 TempData["Error"] = await ApiError(response, "Cannot remove sensor.", ct);
-                return RedirectToAction(nameof(Manage), new { zoneId });
+                return RedirectToAction(nameof(Manage));
             }
             var release = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: ct);
             TempData["Success"] = release.TryGetProperty("qrReusable", out var reusable) && reusable.ValueKind == System.Text.Json.JsonValueKind.True
                 ? "Sensor unpaired. Its original QR can be used again."
                 : "Registration removed. No linked QR claim was changed.";
-            return RedirectToAction(nameof(Manage), new { zoneId = sensor.ZoneId });
+            return RedirectToAction(nameof(Manage));
         }
         catch (UnauthorizedAccessException) { return await LoginAgain(); }
         catch (HttpRequestException) { return Unavailable(); }

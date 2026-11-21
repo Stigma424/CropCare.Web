@@ -2,69 +2,85 @@
 @using CropCare.Web.Models
 @{
     ViewData["Title"] = Model.Sensor.SensorName;
+    ViewData["RecommendationSensorId"] = Model.Sensor.SensorId;
     var reading = Model.Monitoring?.Reading;
     var assessment = Model.Assessment;
-    var metrics = new[] {
-        ("Nitrogen", reading?.Nitrogen, "mg/kg", "nitrogen"),
-        ("Phosphorus", reading?.Phosphorus, "mg/kg", "phosphorus"),
-        ("Potassium", reading?.Potassium, "mg/kg", "potassium"),
-        ("Soil moisture", reading?.Moisture, "%", "moisture"),
-        ("Soil pH", reading?.Ph, "", "ph"),
-        ("Soil temperature", reading?.Temperature, "°C", "temperature"),
-        ("Electrical conductivity", reading?.Ec, "µS/cm", "ec")
+    string Value(double? value, string unit = "") => value.HasValue ? (value.Value.ToString("0.##") + " " + unit).TrimEnd() : "—";
+    string Condition(string key, double? value) => value.HasValue && Model.Monitoring?.Status != "recent"
+        ? "CHECK FRESHNESS"
+        : ReadingStatus.Label(key, value);
+    string Tone(string condition) => condition switch
+    {
+        "GOOD" => "bg-success",
+        "LOW" or "HIGH" or "CHECK SENSOR" => "bg-danger",
+        _ => "bg-secondary"
     };
 }
 <div class="cc-section-heading">
-    <p>@(Model.ZoneName ?? "Zone unavailable") · Device @Model.Sensor.DeviceId</p>
+    <div>
+        <h2>@(Model.ZoneName ?? "Zone unavailable")</h2>
+        <p class="cc-updated mb-0">@SensorDates.Format(Model.Monitoring?.LastReadingAtMs ?? 0) · @(Model.Monitoring?.Status switch {
+            "recent" => "Recent reading", "stale" => "No recent readings",
+            "unknown_time" => "Timestamp unavailable", "awaiting_first_reading" => "Awaiting first reading",
+            _ => "Status unavailable"
+        })</p>
+    </div>
     <a class="btn btn-light" asp-action="Details" asp-route-id="@Model.Sensor.SensorId" asp-route-programId="@Model.ProgramId">Refresh</a>
 </div>
 @if (Model.MonitoringError is string error) { <p class="alert alert-warning">@error</p> }
-<section class="cc-card cc-section">
-    <h2>Latest sensor reading</h2>
-    <p>@SensorDates.Format(Model.Monitoring?.LastReadingAtMs ?? 0) · @(Model.Monitoring?.Status switch {
-        "recent" => "Recent reading", "stale" => "No recent readings",
-        "unknown_time" => "Timestamp unavailable", "awaiting_first_reading" => "Awaiting first reading",
-        _ => "Status unavailable"
-    })</p>
-    <div class="cc-history-grid">
-    @foreach (var (label, value, unit, key) in metrics)
-    {
-        var condition = assessment?.SoilHealth.Parameters.FirstOrDefault(p => p.Parameter.Equals(key, StringComparison.OrdinalIgnoreCase))?.Status;
-        <div class="cc-history-metric">
-            <small>@label</small>
-            <strong>@(value.HasValue ? $"{value:0.##} {unit}" : "—")</strong>
-            <p>@(value.HasValue && Model.Monitoring?.Status != "recent" ? "Check reading freshness" : condition?.Replace('_', ' ') ?? ReadingStatus.Label(key, value))</p>
-            <a asp-action="History" asp-route-id="@Model.Sensor.SensorId" asp-route-metric="@key">View history</a>
-        </div>
-    }
-    </div>
-</section>
-<section class="cc-card cc-section">
+<div class="cc-grid cc-zone-detail cc-section">
+    <section class="cc-card cc-stack">
+        <h3>NPK Readings</h3>
+        @foreach (var (symbol, label, value, badge, key) in new[] {
+            ("N", "Nitrogen", reading?.Nitrogen, "", "nitrogen"),
+            ("P", "Phosphorus", reading?.Phosphorus, "p", "phosphorus"),
+            ("K", "Potassium", reading?.Potassium, "k", "potassium")
+        })
+        {
+            var condition = Condition(key, value);
+            <div class="cc-nutrient">
+                <span class="cc-nutrient-badge @badge">@symbol</span>
+                <div>
+                    <small>@label</small><strong>@Value(value, "mg/kg")</strong>
+                    <a class="small" asp-action="History" asp-route-id="@Model.Sensor.SensorId" asp-route-metric="@key">View history</a>
+                </div>
+                <span class="badge @Tone(condition)">@condition</span>
+            </div>
+        }
+    </section>
+    <section class="cc-card">
+        <h3>Other Details</h3>
+        @foreach (var (label, value, unit, key) in new[] {
+            ("Soil moisture", reading?.Moisture, "%", "moisture"),
+            ("Soil pH", reading?.Ph, "", "ph"),
+            ("Soil temperature", reading?.Temperature, "°C", "temperature"),
+            ("Electrical conductivity", reading?.Ec, "µS/cm", "ec")
+        })
+        {
+            var condition = Condition(key, value);
+            <div class="cc-details-row">
+                <div>
+                    <span>@label</span>
+                    <a class="small d-block" asp-action="History" asp-route-id="@Model.Sensor.SensorId" asp-route-metric="@key">View history</a>
+                </div>
+                <div class="text-end"><strong class="d-block">@Value(value, unit)</strong><span class="badge @Tone(condition)">@condition</span></div>
+            </div>
+        }
+    </section>
+</div>
+<section id="sensor-advice" class="cc-card cc-section">
     <h2>Soil recommendations</h2>
-    @if (assessment is not null)
+    @if (assessment is not null && Model.Monitoring?.Status == "recent" &&
+        assessment.SoilHealth.Score.HasValue && assessment.SoilHealth.ValidSensors > 0 &&
+        assessment.SensorQuality?.Any(sensor => sensor.CanUseForScore) == true)
     {
         <p>Soil health score: @(assessment.SoilHealth.Score is double score ? $"{score:0.#}/100" : "Unavailable") · @assessment.SoilHealth.Label</p>
-        <nav class="cc-actions" aria-label="Hybrid corn program">
-        @foreach (var program in new[] { "HYB-1", "HYB-2" })
-        {
-            <a class="btn @(Model.ProgramId == program ? "btn-success" : "btn-light")" asp-action="Details"
-               asp-route-id="@Model.Sensor.SensorId" asp-route-programId="@program">@program</a>
-        }
-        </nav>
-        @foreach (var quality in assessment.SensorQuality ?? new())
-        {
-            <p>@quality.Message</p>
-        }
-        @foreach (var action in assessment.Recommendations)
-        {
-            <h3>@action.Title</h3><p>@action.WhatToDo @action.Why</p>
-        }
-        <h3>Fertilizer reference plan</h3>
-        <p>Published rates scaled to @(assessment.SensorAssignedAreaSqm?.ToString("0.##")) m² assigned to this sensor. Account for prior applications and confirm crop stage before applying fertilizer.</p>
-        @foreach (var entry in assessment.DisplayPlan.Entries)
-        {
-            <p><strong>@entry.Product (@entry.FertilizerGrade) · @entry.KgForPlot.ToString("0.00") kg</strong><br />@entry.ApplicationTiming</p>
-        }
+        <partial name="_AssessmentContent" model="assessment" view-data="ViewData" />
+    }
+    else if (assessment is not null)
+    {
+        var reason = assessment.SensorQuality?.FirstOrDefault(sensor => !sensor.CanUseForScore)?.Message;
+        <p class="cc-advisory-warning">@(string.IsNullOrWhiteSpace(reason) ? "Waiting for a recent, usable sensor reading." : reason)</p>
     }
     else
     {

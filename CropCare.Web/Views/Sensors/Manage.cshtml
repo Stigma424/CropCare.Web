@@ -3,11 +3,10 @@
 @{
     ViewData["Title"] = "Device Management";
     var zones = Model.Zones;
-    var zoneId = Model.Zone.ZoneId;
 }
 <div class="cc-section-heading">
     <h2>Registered devices</h2>
-    <a class="btn btn-success" asp-action="Pair" asp-route-zoneId="@zoneId">Pair sensor</a>
+    <a class="btn btn-success" asp-action="Pair">Pair sensor</a>
 </div>
 @if (Model.Sensors.Count == 0) { <p class="cc-empty">No sensors registered.</p> }
 <div class="cc-grid">
@@ -17,7 +16,7 @@
     <article class="cc-card">
         <h3>@sensor.SensorName</h3>
         <p>Device ID @sensor.DeviceId · @(sensor.PairingStatus == "qr_claimed" ? "QR paired" : "Unverified registration")</p>
-        <form asp-action="Assign" asp-route-id="@sensor.SensorId" asp-route-zoneId="@zoneId" method="post">
+        <form asp-action="Assign" asp-route-id="@sensor.SensorId" method="post">
             <label class="form-label">Assigned zone
                 <select name="destinationZoneId" class="form-select">
                 @foreach (var zone in zones)
@@ -29,8 +28,8 @@
             <button class="btn btn-light" type="submit">Save assignment</button>
         </form>
         <div class="cc-actions">
-            <a class="btn btn-light" asp-action="Rename" asp-route-id="@sensor.SensorId" asp-route-zoneId="@zoneId">Rename</a>
-            <form asp-action="Delete" asp-route-id="@sensor.SensorId" asp-route-zoneId="@zoneId" method="post"
+            <a class="btn btn-light" asp-action="Rename" asp-route-id="@sensor.SensorId">Rename</a>
+            <form asp-action="Delete" asp-route-id="@sensor.SensorId" method="post"
                   data-confirm="Unpair this sensor? History will be retained.">
                 <button class="btn btn-danger" type="submit">Unpair</button>
             </form>
@@ -40,11 +39,11 @@
 </div>
 @if (Model.Sensors.Count > 0)
 {
-    <form class="cc-card mt-3" asp-action="DeleteAll" asp-route-zoneId="@zoneId" method="post">
+    <form class="cc-card mt-3" asp-action="DeleteAll" method="post">
         <label class="form-label">Type DELETE to confirm unpairing all sensors registered to your account.
             <input class="form-control" name="confirmation" required />
         </label>
         <button class="btn btn-danger" type="submit">Delete all sensors</button>
     </form>
 }
-<a class="cc-back-link" asp-controller="Zones" asp-action="Details" asp-route-id="@zoneId">Back to Zone</a>
+<a class="cc-back-link" asp-controller="Dashboard" asp-action="Index">Back to Dashboard</a>

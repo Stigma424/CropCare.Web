@@ -14,6 +14,8 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
 {
     public string Membership = "free";
     public bool BadAssessment;
+    public bool StaleSensorAssessment;
+    public bool RecentSensorReading;
     public bool Malformed;
     public bool Unauthorized;
     public bool ResetConsumed;
@@ -84,6 +86,17 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
                 if(f.Membership!="pro")return Json(new{error="Pro required"},HttpStatusCode.Forbidden);
                 if(f.BadAssessment)return Json(new{soilHealth=new{score=100}});
                 var assessment=System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"Fixtures","assessment.json")))!;
+                if (path == "/api/sensors/s1/assessment")
+                {
+                    assessment["sensorAssignedAreaSqm"] = 400;
+                    if (f.StaleSensorAssessment)
+                    {
+                        assessment["soilHealth"]!["score"] = null;
+                        assessment["soilHealth"]!["validSensors"] = 0;
+                        assessment["sensorQuality"] = System.Text.Json.Nodes.JsonNode.Parse(
+                            """[{"sensorId":"s1","status":"stale","canUseForScore":false,"message":"The latest reading is stale."}]""");
+                    }
+                }
                 assessment["zoneId"]="z1";
                 if(request.RequestUri.Query.Contains("HYB-2")){assessment["programId"]="HYB-2";assessment["referenceFertilizerPlan"]!["entries"]![1]!["kgForPlot"]=11.8;}
                 return path.EndsWith("historical-preview")?Json(new{historical=true,snapshotAtMs=1793750400000L,sensorsFound=1,warning="Fixture historical only",assessment}):Json(assessment);
@@ -98,8 +111,8 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
             if(path=="/api/sensors") return Json(f.Empty ? Array.Empty<object>() : new object[]{sensor});
             if(path=="/api/sensors/s1" && request.Method==HttpMethod.Delete) return Json(new{qrReusable=true,message="Sensor unpaired. Its original QR can be used again."});
             if(path=="/api/sensors/s1") return request.Method==HttpMethod.Get ? Json(sensor) : Json(new{message="Updated"});
-            var reading=new{readingId="r1",recordedAtMs=1762185600000L,nitrogen=(double?)0,phosphorus=(double?)30,potassium=(double?)40,moisture=(double?)28,ph=(double?)5.7,temperature=(double?)31,ec=(double?)null};
-            if(path=="/api/sensors/s1/monitoring") return Json(new{sensorId="s1",deviceId="TEST_DEVICE",sensorName="Test Soil Sensor",pairingStatus="qr_claimed",status=f.Empty ? "awaiting_first_reading" : "stale",lastReadingAtMs=reading.recordedAtMs,reading=f.Empty ? null : (object)reading});
+            var reading=new{readingId="r1",recordedAtMs=1762185600000L,nitrogen=(double?)0,phosphorus=(double?)30,potassium=(double?)40,moisture=(double?)28,ph=(double?)5.7,temperature=(double?)31,ec=f.RecentSensorReading ? (double?)440 : null};
+            if(path=="/api/sensors/s1/monitoring") return Json(new{sensorId="s1",deviceId="TEST_DEVICE",sensorName="Test Soil Sensor",pairingStatus="qr_claimed",status=f.Empty ? "awaiting_first_reading" : f.RecentSensorReading ? "recent" : "stale",lastReadingAtMs=reading.recordedAtMs,reading=f.Empty ? null : (object)reading});
             if(path=="/api/sensors/s1/readings") return Json(new{sensorId="s1",sensorName="Test Soil Sensor",readings=f.Empty ? Array.Empty<object>() : new object[]{reading},nextCursor=request.RequestUri.Query.Contains("cursor") ? null : "r1"});
             if(path=="/api/notifications" && request.Method==HttpMethod.Get) return Json(f.Empty ? Array.Empty<object>() : new object[]{new{id="n1",title="Fixture soil alert",message="Test-only notification",timestampMs=1762185600000L,isRead=false,type="soil",zoneId="z1",sensorId="s1"}});
             if(path.StartsWith("/api/notifications")) return Json(new{message="Updated",removed=5000});

@@ -34,7 +34,7 @@ public sealed class AccountBoundaryTests
     [Fact] public async Task UnknownMembershipAndPartialStaleReadingsAreExplicit()
     {
         await using var factory=new FixtureFactory{Membership="unknown"};using var client=factory.Client();await WebWorkflowTests.Login(client);
-        var html=await client.GetStringAsync("/Zones/Details/z1");Assert.Contains("Device Management",html);
+        var html=await client.GetStringAsync("/Zones/Details/z1");Assert.DoesNotContain("Device Management",html);
         Assert.Contains("Historical / stale",html);Assert.Contains("Partial measurements",html);
         Assert.DoesNotContain("View Recommendations</button>",html);
     }}

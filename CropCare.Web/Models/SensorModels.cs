@@ -149,4 +149,4 @@ public static class CropCareQr
     }
 }
 
-public sealed record DeviceManagementViewModel(ZoneRecord Zone, IReadOnlyList<ZoneRecord> Zones, IReadOnlyList<SensorRecord> Sensors);
+public sealed record DeviceManagementViewModel(IReadOnlyList<ZoneRecord> Zones, IReadOnlyList<SensorRecord> Sensors);
