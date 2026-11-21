@@ -82,6 +82,11 @@ public sealed class SensorIndexViewModel
 
 public sealed class SensorDetailsViewModel
 {
+    public string? ZoneName { get; set; }
+    public string ProgramId { get; set; } = "HYB-1";
+    public ZoneAssessmentDto? Assessment { get; set; }
+    public string? AssessmentError { get; set; }
+    public bool RequiresPro { get; set; }
     public SensorRecord Sensor { get; set; } = new();
     public SensorMonitoring? Monitoring { get; set; }
     public string? MonitoringError { get; set; }

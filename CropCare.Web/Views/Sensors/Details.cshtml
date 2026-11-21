@@ -1,6 +1,78 @@
 @model CropCare.Web.Models.SensorDetailsViewModel
 @using CropCare.Web.Models
-@{ ViewData["Title"] = Model.Sensor.SensorName; var reading=Model.Monitoring?.Reading; string Value(double? n,string unit="") => n.HasValue ? n.Value.ToString("0.##")+unit : "—"; }
-<div class="cc-section-heading"><p class="mb-0">Device: @Model.Sensor.DeviceId</p><a class="btn btn-light" asp-action="Details" asp-route-id="@Model.Sensor.SensorId">⟳ Refresh</a></div>
-@if(Model.MonitoringError is not null){<div class="alert alert-warning">@Model.MonitoringError</div>}
-<section class="cc-card cc-section"><p class="text-muted">Last recorded: @SensorDates.Format(Model.Monitoring?.LastReadingAtMs ?? 0) · @(Model.Monitoring?.Status switch { "recent"=>"Recent reading", "stale"=>"No recent readings", "unknown_time"=>"Timestamp unavailable", "awaiting_first_reading"=>"Awaiting first reading", _=>"Status unavailable" })</p><div class="cc-history-grid">@foreach(var m in new[]{("Nitrogen",Value(reading?.Nitrogen," mg/kg"),"nitrogen"),("Phosphorus",Value(reading?.Phosphorus," mg/kg"),"phosphorus"),("Potassium",Value(reading?.Potassium," mg/kg"),"potassium"),("Moisture",Value(reading?.Moisture,"%"),"moisture"),("pH",Value(reading?.Ph),"ph"),("Temperature",Value(reading?.Temperature,"°C"),"temperature"),("EC",Value(reading?.Ec),"ec")}){<div class="cc-history-metric"><small>@m.Item1</small><strong>@m.Item2</strong><div><a asp-action="History" asp-route-id="@Model.Sensor.SensorId" asp-route-metric="@m.Item3">View history</a></div></div>}</div></section><div class="cc-actions"><a class="btn btn-success" asp-action="History" asp-route-id="@Model.Sensor.SensorId">All history</a><a class="btn btn-light" asp-action="Rename" asp-route-id="@Model.Sensor.SensorId">Edit Sensor</a><a class="btn btn-light" asp-action="Index" asp-route-zoneId="@Model.Sensor.ZoneId">← Sensor Status</a><form asp-action="Delete" asp-route-id="@Model.Sensor.SensorId" method="post" asp-antiforgery="true" data-confirm="Unpair this sensor? The API releases authorized QR claims. Historical soil records remain stored."><button class="btn btn-danger" type="submit">Unpair sensor</button></form></div>
+@{
+    ViewData["Title"] = Model.Sensor.SensorName;
+    var reading = Model.Monitoring?.Reading;
+    var assessment = Model.Assessment;
+    var metrics = new[] {
+        ("Nitrogen", reading?.Nitrogen, "mg/kg", "nitrogen"),
+        ("Phosphorus", reading?.Phosphorus, "mg/kg", "phosphorus"),
+        ("Potassium", reading?.Potassium, "mg/kg", "potassium"),
+        ("Soil moisture", reading?.Moisture, "%", "moisture"),
+        ("Soil pH", reading?.Ph, "", "ph"),
+        ("Soil temperature", reading?.Temperature, "°C", "temperature"),
+        ("Electrical conductivity", reading?.Ec, "µS/cm", "ec")
+    };
+}
+<div class="cc-section-heading">
+    <p>@(Model.ZoneName ?? "Zone unavailable") · Device @Model.Sensor.DeviceId</p>
+    <a class="btn btn-light" asp-action="Details" asp-route-id="@Model.Sensor.SensorId" asp-route-programId="@Model.ProgramId">Refresh</a>
+</div>
+@if (Model.MonitoringError is string error) { <p class="alert alert-warning">@error</p> }
+<section class="cc-card cc-section">
+    <h2>Latest sensor reading</h2>
+    <p>@SensorDates.Format(Model.Monitoring?.LastReadingAtMs ?? 0) · @(Model.Monitoring?.Status switch {
+        "recent" => "Recent reading", "stale" => "No recent readings",
+        "unknown_time" => "Timestamp unavailable", "awaiting_first_reading" => "Awaiting first reading",
+        _ => "Status unavailable"
+    })</p>
+    <div class="cc-history-grid">
+    @foreach (var (label, value, unit, key) in metrics)
+    {
+        var condition = assessment?.SoilHealth.Parameters.FirstOrDefault(p => p.Parameter.Equals(key, StringComparison.OrdinalIgnoreCase))?.Status;
+        <div class="cc-history-metric">
+            <small>@label</small>
+            <strong>@(value.HasValue ? $"{value:0.##} {unit}" : "—")</strong>
+            <p>@(value.HasValue && Model.Monitoring?.Status != "recent" ? "Check reading freshness" : condition?.Replace('_', ' ') ?? ReadingStatus.Label(key, value))</p>
+            <a asp-action="History" asp-route-id="@Model.Sensor.SensorId" asp-route-metric="@key">View history</a>
+        </div>
+    }
+    </div>
+</section>
+<section class="cc-card cc-section">
+    <h2>Soil recommendations</h2>
+    @if (assessment is not null)
+    {
+        <p>Soil health score: @(assessment.SoilHealth.Score is double score ? $"{score:0.#}/100" : "Unavailable") · @assessment.SoilHealth.Label</p>
+        <nav class="cc-actions" aria-label="Hybrid corn program">
+        @foreach (var program in new[] { "HYB-1", "HYB-2" })
+        {
+            <a class="btn @(Model.ProgramId == program ? "btn-success" : "btn-light")" asp-action="Details"
+               asp-route-id="@Model.Sensor.SensorId" asp-route-programId="@program">@program</a>
+        }
+        </nav>
+        @foreach (var quality in assessment.SensorQuality ?? new())
+        {
+            <p>@quality.Message</p>
+        }
+        @foreach (var action in assessment.Recommendations)
+        {
+            <h3>@action.Title</h3><p>@action.WhatToDo @action.Why</p>
+        }
+        <h3>Fertilizer reference plan</h3>
+        <p>Published rates scaled to @(assessment.SensorAssignedAreaSqm?.ToString("0.##")) m² assigned to this sensor. Account for prior applications and confirm crop stage before applying fertilizer.</p>
+        @foreach (var entry in assessment.DisplayPlan.Entries)
+        {
+            <p><strong>@entry.Product (@entry.FertilizerGrade) · @entry.KgForPlot.ToString("0.00") kg</strong><br />@entry.ApplicationTiming</p>
+        }
+    }
+    else
+    {
+        <p>@Model.AssessmentError</p>
+        @if (Model.RequiresPro) { <a class="btn btn-light" asp-controller="Subscription" asp-action="Index">Demo Subscription</a> }
+    }
+</section>
+<div class="cc-actions">
+    <a class="btn btn-success" asp-action="History" asp-route-id="@Model.Sensor.SensorId">All history</a>
+    <a class="btn btn-light" asp-action="Index" asp-route-zoneId="@Model.Sensor.ZoneId">Back to Sensor Status</a>
+</div>

@@ -28,6 +28,7 @@ public sealed class ZoneAssessmentPageModel
 
 public sealed class ZoneAssessmentDto
 {
+    public double? SensorAssignedAreaSqm { get; set; }
     public string ZoneId { get; set; } = "";
 
     public string ZoneName { get; set; } = "";

@@ -1,6 +1,24 @@
 @model CropCare.Web.Models.ZoneOverview
 @{ ViewData["Title"] = "Sensor Status"; }
-<div class="cc-section-heading"><h2>@Model.Zone.ZoneName</h2><div class="cc-actions"><a class="btn btn-light" asp-action="Index" asp-route-zoneId="@Model.Zone.ZoneId">⟳ Refresh</a><a class="btn btn-success" asp-action="Pair" asp-route-zoneId="@Model.Zone.ZoneId">+ Add Sensor</a></div></div>
-@if(Model.Error is string error){<div class="alert alert-warning">@error</div>}
-@if(Model.Sensors.Count==0){<div class="cc-empty">No sensors registered. Scan a provisioned QR to add one.</div>}
-<div class="cc-grid">@foreach(var snapshot in Model.Sensors){var sensor=snapshot.Sensor;<article class="cc-card"><div class="cc-section-heading"><h3>@sensor.SensorName</h3><span class="badge @(snapshot.Monitoring?.Status=="recent" ? "bg-success" : "bg-secondary")">@snapshot.Freshness</span></div><p class="text-muted">Device: @sensor.DeviceId</p><p>Last recorded: @CropCare.Web.Models.SensorDates.Format(snapshot.Monitoring?.LastReadingAtMs ?? 0)</p>@if(snapshot.Error is string issue){<p class="text-danger">@issue</p>}<div class="cc-actions"><a class="btn btn-success" asp-action="Details" asp-route-id="@sensor.SensorId">View Details</a><a class="btn btn-light" asp-action="Rename" asp-route-id="@sensor.SensorId">Edit</a><form asp-action="Delete" asp-route-id="@sensor.SensorId" method="post" asp-antiforgery="true" data-confirm="Unpair this sensor? The API releases authorized QR claims. Historical readings remain stored."><input type="hidden" name="zoneId" value="@Model.Zone.ZoneId" /><button class="btn btn-danger" type="submit">Unpair</button></form></div></article>}</div><a class="cc-back-link" asp-controller="Zones" asp-action="Details" asp-route-id="@Model.Zone.ZoneId">← Back to Zone</a>
+<div class="cc-section-heading">
+    <h2>@Model.Zone.ZoneName</h2>
+    <a class="btn btn-light" asp-action="Index" asp-route-zoneId="@Model.Zone.ZoneId">Refresh</a>
+</div>
+@if (Model.Error is string error) { <p class="alert alert-warning">@error</p> }
+@if (Model.Sensors.Count == 0) { <p class="cc-empty">No sensors registered.</p> }
+<div class="cc-grid">
+@foreach (var snapshot in Model.Sensors)
+{
+    var sensor = snapshot.Sensor;
+    <article class="cc-card">
+        <h3>@sensor.SensorName</h3>
+        <p>@snapshot.Freshness · @CropCare.Web.Models.SensorDates.Format(snapshot.Monitoring?.LastReadingAtMs ?? 0)</p>
+        @if (snapshot.Error is string issue) { <p class="text-danger">@issue</p> }
+        <div class="cc-actions">
+            <a class="btn btn-success" asp-action="Details" asp-route-id="@sensor.SensorId">View Details</a>
+            <a class="btn btn-light" asp-action="History" asp-route-id="@sensor.SensorId">View History</a>
+        </div>
+    </article>
+}
+</div>
+<a class="cc-back-link" asp-controller="Zones" asp-action="Details" asp-route-id="@Model.Zone.ZoneId">Back to Zone</a>

@@ -70,18 +70,15 @@ public sealed class BrowserTests
         await page.GotoAsync(origin+"/Sensors/History/s1"); await page.Locator("#historyDate").FillAsync("2020-01-01"); await page.Locator("#historyDate").DispatchEventAsync("change"); Assert.Equal(0,await page.Locator("[data-history-card]:visible").CountAsync()); Assert.True(await page.GetByRole(AriaRole.Link,new(){Name="Load older readings"}).IsVisibleAsync()); await page.Locator("#clearHistoryDate").ClickAsync(); Assert.Equal(1,await page.Locator("[data-history-card]:visible").CountAsync());
         factory.Membership="pro";
         await Check("/Zones/Details/z1","zone-api-pro");
-        await page.GetByRole(AriaRole.Button,new(){Name="View Recommendations",Exact=true}).ClickAsync();
-        await page.Locator(".cc-advisory-hero").WaitForAsync();
-        Assert.Contains("YOUR NEXT STEP",await page.Locator("#zoneRecommendationContent").InnerTextAsync());
-        Assert.False(await page.Locator("[data-advice-details]").IsVisibleAsync());
-        Assert.True(await page.GetByRole(AriaRole.Heading,new(){Name="What to apply",Exact=true}).IsVisibleAsync());
-        await page.GetByRole(AriaRole.Button,new(){Name="View more details",Exact=true}).ClickAsync();
-        Assert.True(await page.GetByRole(AriaRole.Heading,new(){Name="Sensor readings and quality",Exact=true}).IsVisibleAsync());
-        await page.Locator("[data-assessment-program-card][data-program-id='HYB-2']").ClickAsync();
-        await Assertions.Expect(page.Locator("[data-program-id='HYB-2']")).ToHaveAttributeAsync("aria-pressed","true");
-        await page.GetByText("11.80 kg for this plot",new(){Exact=true}).WaitForAsync();
-        await page.ScreenshotAsync(new(){Path=Path.Combine(artifacts,"shared-api-advisory.png"),FullPage=true});
-        await page.Locator("#zoneRecommendationContent .btn-close").ClickAsync();
+        Assert.Equal(0, await page.GetByRole(AriaRole.Button,new(){Name="View Recommendations",Exact=true}).CountAsync());
+        await Check("/Sensors?zoneId=z1","read-only-sensor-status");
+        Assert.Equal(0, await page.GetByRole(AriaRole.Button,new(){Name="Unpair",Exact=true}).CountAsync());
+        await Check("/Sensors/Manage?zoneId=z1","device-management");
+        Assert.True(await page.GetByRole(AriaRole.Button,new(){Name="Unpair",Exact=true}).IsVisibleAsync());
+        await Check("/Sensors/Details/s1","sensor-recommendations");
+        Assert.True(await page.GetByRole(AriaRole.Heading,new(){Name="Fertilizer reference plan",Exact=true}).IsVisibleAsync());
+        await page.GetByRole(AriaRole.Link,new(){Name="HYB-2",Exact=true}).ClickAsync();
+        await page.GetByText("Urea",new(){Exact=false}).First.WaitForAsync();
         await Check("/Advisories/Current?zoneId=z1","advice-full-page-desktop");
         await page.SetViewportSizeAsync(390,844);await Check("/Dashboard","dashboard-phone");
         await Check("/Advisories/Current?zoneId=z1","advice-full-page-phone");
@@ -98,4 +95,3 @@ public sealed class BrowserTests
         Assert.Empty(errors);
     }
 }
-

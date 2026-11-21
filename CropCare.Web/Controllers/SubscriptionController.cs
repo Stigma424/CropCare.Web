@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CropCare.Web.Models;
@@ -32,7 +32,7 @@ public sealed class SubscriptionController : Controller
         try
         {
             var client = _clients.CreateClient("CropCareApi");
-            using var req = Authorized(HttpMethod.Get, "api/subscriptions/me", token);
+            using var req = Authorized(HttpMethod.Get, "api/subscriptions/me/demo", token);
             using var response = await client.SendAsync(req, ct);
             if (response.StatusCode == HttpStatusCode.Unauthorized) return await Expired(session);
             if (response.IsSuccessStatusCode)
@@ -51,59 +51,24 @@ public sealed class SubscriptionController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Submit(SubscriptionPageViewModel model, CancellationToken ct)
+    public async Task<IActionResult> SetDemoPlan(bool? isSubscribed, CancellationToken ct)
     {
         var (token, session) = SessionToken();
         if (token == null) return await Expired(session);
-
-        if (!ModelState.IsValid) return await Reload(model, token, ct);
-
+        if (isSubscribed is null) return BadRequest();
         try
         {
-            var client = _clients.CreateClient("CropCareApi");
-            using var req = Authorized(HttpMethod.Post, "api/subscriptions/request", token);
-            req.Content = JsonContent.Create(new
-            {
-                referenceNumber = model.ReferenceNumber.Trim()
-            });
-            using var response = await client.SendAsync(req, ct);
+            using var request = Authorized(HttpMethod.Put, "api/subscriptions/me/demo", token);
+            request.Content = JsonContent.Create(new { isSubscribed });
+            using var response = await _clients.CreateClient("CropCareApi").SendAsync(request, ct);
             if (response.StatusCode == HttpStatusCode.Unauthorized) return await Expired(session);
-            if (response.IsSuccessStatusCode)
-            {
-                TempData["Success"] = "Receipt sent for manual review. Your subscription is not active yet.";
-                return RedirectToAction(nameof(Index));
-            }
-            ModelState.AddModelError("", response.StatusCode switch
-            {
-                HttpStatusCode.Conflict => "A request is already pending, your account is Pro, or the reference was already used.",
-                HttpStatusCode.BadRequest => "Enter a valid GCash reference number.",
-                _ => "Could not submit the receipt. Please try again later."
-            });
+            if (!response.IsSuccessStatusCode)
+                TempData["Error"] = "Could not update your demo plan.";
         }
-        catch (HttpRequestException)
-        { ModelState.AddModelError("", "CropCare API is unreachable."); }
+        catch (HttpRequestException) { TempData["Error"] = "CropCare API is unreachable."; }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        { ModelState.AddModelError("", "Submission timed out."); }
-        return await Reload(model, token, ct);
-    }
-
-    private async Task<IActionResult> Reload(SubscriptionPageViewModel model,
-        string token, CancellationToken ct)
-    {
-        try
-        {
-            var client = _clients.CreateClient("CropCareApi");
-            using var req = Authorized(HttpMethod.Get, "api/subscriptions/me", token);
-            using var response = await client.SendAsync(req, ct);
-            if (response.IsSuccessStatusCode)
-                model.Status = await response.Content
-                    .ReadFromJsonAsync<SubscriptionStatusDto>(cancellationToken: ct)
-                    ?? new SubscriptionStatusDto();
-        }
-        catch (HttpRequestException) { model.Error = "Could not refresh subscription status."; }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        { model.Error = "Status request timed out."; }
-        return View("Index", model);
+        { TempData["Error"] = "The request timed out. Check your current plan below."; }
+        return RedirectToAction(nameof(Index));
     }
 
     private (string? Token, string? Session) SessionToken()

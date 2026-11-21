@@ -68,9 +68,19 @@ public sealed class FixtureFactory : WebApplicationFactory<Program>
             if(f.Malformed) return new(HttpStatusCode.OK){Content=new StringContent("<html>invalid upstream</html>")};
             if(path=="/api/account/me") return f.ProfileMissing ? Json(new{error="Missing"},HttpStatusCode.NotFound) : Json(new{userId="owner",firstName="Test",middleName="",lastName="Farmer",username="farmer",email="fixture@example.test",address="Test field",phoneNumber=""});
             if(path=="/api/onboarding/profile") return f.RegistrationConflict ? Json(new{error="Conflict"},HttpStatusCode.Conflict) : Json(new{userId="owner"},HttpStatusCode.Created);
+            if(path=="/api/subscriptions/me/demo")
+            {
+                if(request.Method==HttpMethod.Put)
+                {
+                    using var input=System.Text.Json.JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
+                    f.Membership=input.RootElement.GetProperty("isSubscribed").GetBoolean() ? "pro" : "free";
+                }
+                return Json(new{status=f.Membership=="pro" ? "pro" : "free",isSubscribed=f.Membership=="pro"});
+            }
+            if(path=="/api/sensors/s1/zone" && request.Method==HttpMethod.Put) return Json(new{zoneId="z2"});
             if(path=="/api/subscriptions/me") return Json(new{status=f.Membership,isSubscribed=f.Membership=="pro",message="Fixture account state",referenceLastFour="1234"});
             if(path=="/api/subscriptions/request") { f.Membership="pending"; return Json(new{status="pending"},HttpStatusCode.Accepted); }
-            if(path.StartsWith("/api/zones/z1/assessment")) {
+            if(path.StartsWith("/api/zones/z1/assessment") || path=="/api/sensors/s1/assessment") {
                 if(f.Membership!="pro")return Json(new{error="Pro required"},HttpStatusCode.Forbidden);
                 if(f.BadAssessment)return Json(new{soilHealth=new{score=100}});
                 var assessment=System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"Fixtures","assessment.json")))!;

@@ -42,13 +42,19 @@ public sealed class WebWorkflowTests
         Assert.Contains("/Account/Login",expired.Headers.Location!.OriginalString);
         Assert.Equal(TimeSpan.FromMinutes(50),WebSessionPolicy.Lifetime(3600));Assert.True(WebSessionPolicy.Lifetime(30)<=TimeSpan.Zero);
     }
-    [Theory][InlineData("free")][InlineData("pending")][InlineData("rejected")][InlineData("pro")]
-    public async Task MembershipIsDisplayedWithoutClientActivation(string membership)
+    [Fact] public async Task DemoMembershipChangesThroughAuthenticatedApi()
     {
-        await using var factory=new FixtureFactory{Membership=membership};using var client=factory.Client();await Login(client);
-        var html=await client.GetStringAsync("/Subscription");Assert.Contains(membership.ToUpperInvariant(),html);
-        Assert.Equal(membership is "free" or "rejected",html.Contains("name=\"ReferenceNumber\""));
-        Assert.DoesNotContain(factory.Calls,c=>c.Method=="PATCH"&&c.Path=="/api/account/me");
+        await using var factory=new FixtureFactory{Membership="free"};using var client=factory.Client();await Login(client);
+        var html=await client.GetStringAsync("/Subscription");
+        Assert.Contains("Activate Pro",html);
+        Assert.DoesNotContain("ReferenceNumber",html);
+        using var upgrade=await Post(client,"/Subscription","/Subscription/SetDemoPlan",new(){{"isSubscribed","true"}});
+        Assert.Equal(HttpStatusCode.Redirect,upgrade.StatusCode);
+        Assert.Contains("Switch to Free",await client.GetStringAsync("/Subscription"));
+        using var downgrade=await Post(client,"/Subscription","/Subscription/SetDemoPlan",new(){{"isSubscribed","false"}});
+        Assert.Equal(HttpStatusCode.Redirect,downgrade.StatusCode);
+        Assert.Contains("Activate Pro",await client.GetStringAsync("/Subscription"));
+        Assert.Equal(2,factory.Calls.Count(c=>c.Method=="PUT"&&c.Path=="/api/subscriptions/me/demo"&&c.Bearer=="Bearer fixture-id-token"));
     }
     [Fact] public async Task HistoryPreservesSevenMetricsZeroNullAndPagination()
     {
@@ -66,7 +72,7 @@ public sealed class WebWorkflowTests
         using var read=await Post(client,"/Notifications","/Notifications/MarkRead",new(){{"id","n1"}});Assert.Equal(HttpStatusCode.Redirect,read.StatusCode);
         using var remove=await Post(client,"/Notifications","/Notifications/Remove",new(){{"id","n1"}});Assert.Equal(HttpStatusCode.Redirect,remove.StatusCode);
         using var clear=await Post(client,"/Notifications","/Notifications/ClearAll",new());Assert.Equal(HttpStatusCode.Redirect,clear.StatusCode);
-        using var unpair=await Post(client,"/Sensors/Details/s1","/Sensors/Delete/s1",new());Assert.Equal(HttpStatusCode.Redirect,unpair.StatusCode);
+        using var unpair=await Post(client,"/Sensors/Manage?zoneId=z1","/Sensors/Delete/s1?zoneId=z1",new());Assert.Equal(HttpStatusCode.Redirect,unpair.StatusCode);
         Assert.Contains("original QR can be used again",await client.GetStringAsync(unpair.Headers.Location!));
         Assert.Contains(factory.Calls,c=>c.Path=="/api/sensors/s1"&&c.Method=="DELETE");
     }
